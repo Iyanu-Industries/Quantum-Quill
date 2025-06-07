@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Add this block at the top of the file */
 @font-face {
   font-family: "Poppins";
   src: url("/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
@@ -13,12 +12,22 @@
   font-weight: 600;
   font-style: normal;
 }
+
+/* Manrope font faces */
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-VariableFont_wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+}
+
 /* Add more weights/styles as needed */
 
 :root {
   --background: #0a0a0a;
   --foreground: #6d34c0;
-  --font-poppins: "Poppins"; /* Update this line */
+  --font-poppins: "Poppins";
+  --font-manrope: "Manrope";
 }
 
 @theme inline {
@@ -26,7 +35,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-manrope: var(--font-geist-manrope);
+  --font-manrope: var(--font-manrope);
   --font-poppins: var(--font-poppins);
 }
 
@@ -36,19 +45,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Example usage */
 .poppins {
   font-family: var(--font-poppins), sans-serif;
 }
 
 .manrope {
-  font-family: var(--font-manrope);
-}
-
-.sidebar {
-  transform: translateX(100%);
-}
-
-:global(#sidebar-toggle):checked ~ .sidebar {
-  transform: translateX(0%);
+  font-family: var(--font-manrope), sans-serif;
 }
