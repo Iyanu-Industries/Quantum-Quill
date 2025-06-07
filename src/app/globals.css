@@ -44,3 +44,11 @@ body {
 .manrope {
   font-family: var(--font-manrope);
 }
+
+.sidebar {
+  transform: translateX(100%);
+}
+
+:global(#sidebar-toggle):checked ~ .sidebar {
+  transform: translateX(0%);
+}
