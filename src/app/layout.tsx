@@ -18,11 +18,11 @@ const poppins = Poppins({
   weight: ["400", "700"],
 });
 
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+// const manrope = Manrope({
+//   variable: "--font-manrope",
+//   subsets: ["latin"],
+//   weight: ["400", "500", "600", "700"],
+// });
 
 export const metadata: Metadata = {
   title: "Create Next App",

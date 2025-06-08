@@ -1,0 +1,58 @@
+.borderGradient {
+  text-align: center;
+  position: relative;
+  background: linear-gradient(to top, rgba(217, 123, 254), transparent);
+  display: inline-block;
+  z-index: 2222;
+  box-sizing: border-box;
+}
+
+.borderGradient::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(to top, #5d1eed, #d97bfe);
+  border-radius: 12px;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.borderGradient::after {
+  background: #0d0d0d;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 12px;
+  z-index: -1;
+}
+
+.gradientOverlay {
+  position: absolute;
+  top: 25%;
+  left: 55%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #d97bfe, #5d1eed);
+  mix-blend-mode: soft-light; /* Glowing effect */
+  z-index: 1; /* Above background, below cards */
+}
+
+@media screen and (max-width: 768px) {
+  .borderGradient::before {
+    top: -1.22px;
+    left: -1.22px;
+    right: -1.22px;
+    bottom: -1.22px;
+    border-radius: 4.89px;
+  }
+  .borderGradient::after {
+    border-radius: 4.89px;
+  }
+}
