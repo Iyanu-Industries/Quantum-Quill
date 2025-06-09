@@ -11,7 +11,7 @@ const Reviews = () => {
         width={626.236328125}
         height={626.236328125}
         alt="Star Background"
-        className="absolute top-[100px] left-[-100px] z-[-1]"
+        className="absolute top-[300px] left-[-100px] z-[-1]"
       />{" "}
       <Image
         src={"/images/Polygon 8 2.png"}
