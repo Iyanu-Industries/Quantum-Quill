@@ -41,7 +41,7 @@ const Reviews = () => {
         gradientColor="#0a0a0a"
         gradientWidth={70}
       >
-        <ReviewRow reviews={reviews} direction="left" />
+        <ReviewRow reviews={reviews} />
       </Marquee>
       <div className="mt-[14px]"></div>
       <Marquee
@@ -53,7 +53,7 @@ const Reviews = () => {
         gradientColor="#0a0a0a"
         gradientWidth={70}
       >
-        <ReviewRow reviews={reviews} direction="left" />
+        <ReviewRow reviews={reviews} />
       </Marquee>
     </div>
   );

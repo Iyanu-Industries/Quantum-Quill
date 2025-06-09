@@ -10,10 +10,9 @@ interface Review {
 
 interface RowProps {
   reviews: Review[];
-  direction: "left" | "right";
 }
 
-const Row = ({ reviews, direction }: RowProps) => {
+const Row = ({ reviews }: RowProps) => {
   const extendedReviews = [...reviews, ...reviews]; // Duplicate for seamless loop
   return (
     <div className=" overflow-hidden">
