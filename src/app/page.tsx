@@ -5,6 +5,7 @@ import {
   HeroSection,
   FeaturesSection,
   WhySection,
+  ReviewSection,
 } from "@/components/home";
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
       <HeroSection />
       <FeaturesSection />
       <WhySection />
+      <ReviewSection />
     </div>
   );
 }

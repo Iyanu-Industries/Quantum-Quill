@@ -1,0 +1,29 @@
+.scroller {
+  display: flex;
+  transition: transform 0s linear;
+}
+.animateSctollRight {
+  animation: scroll-left 30s linear infinite;
+}
+
+.animateSctollLeft {
+  animation: scroll-right 30s linear infinite;
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100vw);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-100vw);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
