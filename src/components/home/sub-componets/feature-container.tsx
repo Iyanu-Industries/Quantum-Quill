@@ -15,16 +15,14 @@ const FeatureContainer = ({
         className={`lg:w-[6.8056vw] w-[39.95760726928711px]  md:w-[69px] md:h-[69px] ${styles.borderGradient} lg:h-[6.8056vw] h-[39.95760726928711px] inline-block bg-gradient-to-t from-[#D97BFE]/12  rounded-[4.89px] md:rounded-[12px]`}
       ></div>
       <div
-        style={{
-          fontSize:
-            "clamp(16.895px, 16.895px + 0.01057 * (100vw - 53.33vw), 24px)",
-        }}
-        className="poppins mt-[47.3px] md:mt-[81.65px] lg:mt-[8.0556vw] font-[500]  text-[9.79px] md:text-[16.895px] lg:text-[20px] xl:text-[24px] leading-[100%] text-white"
+        className={`poppins mt-[47.3px] md:mt-[81.65px] ${styles.FmarginTop} lg:mt-[8.0556vw] font-[500]  text-[9.79px] md:text-[16.895px] lg:text-[20px] xl:text-[24px] leading-[100%] text-white ${styles.Fheader}`}
       >
         {featureName}
       </div>
 
-      <div className="md:[5.86px] lg:mt-[8px] mt-[3.36px] manrope text-[#909090] md:text-[11.26px] lg:text-[12px] xl:text-[16px] text-[6.52px] leading-[100%] font-[400]">
+      <div
+        className={`md:[5.86px]${styles.Fdescription} lg:mt-[8px] mt-[3.36px] manrope text-[#909090] md:text-[11.26px] lg:text-[12px] xl:text-[16px] text-[6.52px] leading-[100%] font-[400]`}
+      >
         {featureDescription}
       </div>
     </div>

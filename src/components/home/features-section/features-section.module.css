@@ -34,14 +34,12 @@
 
 .gradientOverlay {
   position: absolute;
-  top: 25%;
-  left: 55%;
-  width: 300px;
-  height: 300px;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, #d97bfe, #5d1eed);
-  mix-blend-mode: soft-light; /* Glowing effect */
+  top: 15%;
+  left: 45%;
+  width: 600px;
+  height: 600px;
   z-index: 1; /* Above background, below cards */
+  rotate: 180deg;
 }
 
 @media screen and (max-width: 768px) {
@@ -54,5 +52,26 @@
   }
   .borderGradient::after {
     border-radius: 4.89px;
+  }
+}
+
+@media screen and (min-width: 1024) and (max-width: 1280px) {
+  .Fheader {
+    font-size: 16px;
+  }
+  .Fdescription {
+    font-size: 14px;
+  }
+  .FmarginTop {
+    margin-top: 7vw;
+  }
+}
+
+@media screen and (min-width: 1280px) and (max-width: 1440px) {
+  .Fheader {
+    font-size: 22px;
+  }
+  .Fdescription {
+    font-size: 16px;
   }
 }
