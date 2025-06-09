@@ -223,6 +223,31 @@ const Why = () => {
           </div>
         </div>
       </div>
+      {/* mobile view */}
+      <div
+        className={`${styles.gradientBorder} flex md:hidden flex-col relative items-center justify-center mt-[10.67vw] w-[91.47vw] h-[101.33vw] rounded-[5.35vw] px-[8.91vw] z-50`}
+      >
+        <div className="h-[49.85vw]">
+          <Image
+            src={"/images/customers.png"}
+            width={468}
+            height={254.93775939941406}
+            alt="Revenue__"
+            className="absolute  z-[2] top-[60.98px] left-[50px] w-[51.97vw] h-[43.43vw]"
+          />
+
+          <Image
+            src={"/images/Ellipse 9970.png"}
+            width={472}
+            height={471.9092102050781}
+            alt="elipse"
+            className="absolute z-[1] top-[-10%] rotate-180 left-[-10%] w-[125.87vw] h-[125.84vw]"
+          />
+        </div>
+        <div className="ml-[0] mb-[-7.06vw] font-[600] poppins text-[7.13vw] leading-[100%] tracking-[0%] text-white whitespace-nowrap">
+          AI You Can Trust{" "}
+        </div>
+      </div>
     </div>
   );
 };
