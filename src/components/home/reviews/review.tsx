@@ -27,11 +27,11 @@ const Reviews = () => {
         alt="Star Background"
         className="absolute top-[200px] right-[-350px] z-[-1]"
       />
-      <h1 className="font-[600] leading-[110.00000000000001%] tracking-[0%] mt-[172px] text-center text-white poppin text-[48px]">
+      <h1 className="font-[500] lg:font-[600] leading-[100%] lg:leading-[110.00000000000001%] tracking-[-3%] lg:tracking-[0%] mt-[64px] lg:mt-[172px] text-center text-white poppins text-[28px] lg:text-[48px]">
         What our Users have
         <br /> to say about us.
       </h1>
-      <div className="mt-[74px]"></div>
+      <div className="mt-[24px] lg:mt-[74px]"></div>
       <Marquee
         autoFill={true}
         speed={100}
