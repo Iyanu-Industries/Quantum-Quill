@@ -36,8 +36,8 @@
   position: absolute;
   top: 15%;
   left: 45%;
-  width: 600px;
-  height: 600px;
+  width: 500px;
+  height: 500px;
   z-index: 1; /* Above background, below cards */
   rotate: 180deg;
 }
