@@ -6,6 +6,7 @@ import {
   FeaturesSection,
   WhySection,
   ReviewSection,
+  SubscribeToList,
 } from "@/components/home";
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
       <FeaturesSection />
       <WhySection />
       <ReviewSection />
+      <SubscribeToList />
     </div>
   );
 }
