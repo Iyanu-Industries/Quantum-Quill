@@ -19,7 +19,7 @@ const GetStared = () => {
         <br /> <span className={`${styles.gradientText}`}>Quantum Quill</span>?
         <br />
         <GradientButton
-          className="leading-[0] mx-auto md:block hidden"
+          className="leading-[0] mt-[60px] mx-auto md:block hidden"
           height="53px"
           width="188px"
           text="Get Started"

@@ -5,3 +5,4 @@ export { default as WhySection } from "./why-section/why";
 export { default as ReviewSection } from "./reviews/review";
 export { default as SubscribeToList } from "./subscribe-to-list/subscribe-to-list";
 export { default as GetStarted } from "./pre-footer/get-started";
+export { default as Footer } from "./footer/footer";
