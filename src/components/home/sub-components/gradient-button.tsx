@@ -18,7 +18,7 @@ const GradientButton = ({
   return (
     <button
       style={{ width, height, fontSize: textSize, borderRadius }}
-      className={`bg-gradient-to-tr from-[#5D1EED] to-[#D97BFE] text-white font-[500] shadow-md hover:opacity-90 transition ${className}`}
+      className={`bg-gradient-to-tr from-[#5D1EED] to-[#D97BFE] text-white text-center font-[500] shadow-md hover:opacity-90 transition ${className}`}
     >
       {text}
     </button>

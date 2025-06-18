@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import { GradientButton } from "../sub-componets";
+import { GradientButton } from "../sub-components";
 import Image from "next/image";
 import styles from "./navbar.module.css";
 

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import { ReviewCard } from "../sub-componets";
+import { ReviewCard } from "../sub-components";
 
 interface Review {
   review: string;

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, FormEvent } from "react";
-import { GradientButton } from "../sub-componets";
+import { GradientButton } from "../sub-components";
 const SubscribeToList = () => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -32,9 +32,9 @@ const SubscribeToList = () => {
   };
   return (
     <div className="px-[16px] md:px-0 w-screen flex flex-col items-center">
-      <div className="md:mt-[149px] flex-col md:flex-row relative mt-[24px] w-full md:mx-0  max-w-[1240px] flex items-center pl-0 md:pl-[80px] border border-[#2A2A2A] rounded-[12px] h-[158px] md:h-[241px] bg-gradient-to-r from-[#1A1A1A] via-[#141414E5]/90 via to-[from-[#1A1A1A]">
+      <div className="md:mt-[149px] flex-col md:flex-row relative mt-[24px] w-[95%] lg:w-full md:mx-0  max-w-[1240px] flex gap-[10px] items-center pl-0  md:pl-[30px] lg:pl-[80px] border border-[#2A2A2A] rounded-[12px] h-[158px] md:h-[241px] bg-gradient-to-r from-[#1A1A1A] via-[#141414E5]/90 via to-[from-[#1A1A1A]">
         <div className="hidden md:block">
-          <h1 className="font-[500] text-[36px] text-white poppins leading-[110.00000000000001%] tracking-[0%]">
+          <h1 className="font-[500] text-[30px] lg:text-[36px] text-white poppins leading-[110.00000000000001%] tracking-[0%]">
             Subscribe to our list
           </h1>
           <p className="w-[302px] font-[400] text-[16px] text-[#DADADA] poppins leading-[20px] tracking-[0%] mt-[19px]">
@@ -43,7 +43,7 @@ const SubscribeToList = () => {
         </div>
         <form
           onSubmit={handleSubmit}
-          className="bg-[#0A0A0ACC] hidden md:block relative  placeholder:text-[#5A5A5A] text-[16px] font-[400] poppins text-white w-[536px] h-[71px] ml-auto rounded-[12px] mr-[80px]"
+          className="bg-[#0A0A0ACC] hidden md:block relative  placeholder:text-[#5A5A5A] text-[16px] font-[400] poppins text-white  w-[500px] lg:w-[536px] h-[71px] ml-auto rounded-[12px] mr-[80px]"
         >
           <input
             type="email"

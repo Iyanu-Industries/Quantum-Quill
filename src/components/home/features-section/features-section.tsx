@@ -1,5 +1,5 @@
 import React from "react";
-import { FeatureContainer } from "../sub-componets";
+import { FeatureContainer } from "../sub-components";
 import styles from "./features-section.module.css";
 import { features } from "../data/features";
 import Image from "next/image";

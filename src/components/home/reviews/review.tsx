@@ -1,5 +1,5 @@
 import React from "react";
-import { ReviewRow } from "../sub-componets";
+import { ReviewRow } from "../sub-components";
 import { reviews } from "../data/review";
 import Marquee from "react-fast-marquee";
 import Image from "next/image";
