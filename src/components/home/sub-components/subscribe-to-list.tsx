@@ -1,7 +1,7 @@
 "use client";
 import React, { FormEvent } from "react";
 import { useState } from "react";
-import GradientButton from "./gradient-button";
+import GradientButton from "../../gradient-button";
 const SubscribeToList = ({ className }: { className: string }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");

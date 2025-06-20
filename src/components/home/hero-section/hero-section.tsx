@@ -1,5 +1,5 @@
 import React from "react";
-import { GradientButton } from "../sub-components";
+import GradientButton from "../../../components/gradient-button";
 import Image from "next/image";
 import styles from "./hero-section.module.css";
 const HeroSection = () => {
