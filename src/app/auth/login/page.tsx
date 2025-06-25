@@ -2,7 +2,7 @@ import React from "react";
 import { AuthBackground } from "@/components/auth/sub-components";
 import Link from "next/link";
 import GradientButton from "@/components/gradient-button";
-import { signUp } from "@/actions/auth"; // Import the server action
+import { login } from "@/actions/auth"; // Import the server action
 
 const Login = () => {
   return (
@@ -17,7 +17,7 @@ const Login = () => {
             Sign Up
           </Link>
         </p>
-        <form>
+        <form action={login}>
           <div className="w-full mt-[32px]">
             <h1 className="text-[#666666] tracking-[0] leading-[100%]">
               Email
