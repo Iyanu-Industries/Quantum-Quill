@@ -1,0 +1,17 @@
+/* Default styles for larger screens */
+.inputText {
+  width: 320.5px;
+}
+.marginTop {
+  margin-top: 0;
+}
+
+/* Adjustments for smaller screens */
+@media screen and (max-width: 1439px) {
+  .inputText {
+    width: 100%;
+  }
+  .marginTop {
+    margin-top: 32px;
+  }
+}

@@ -2,11 +2,15 @@ import React from "react";
 import { AuthBackground } from "@/components/auth/sub-components";
 import Link from "next/link";
 import GradientButton from "@/components/gradient-button";
-import { cookies } from "next/headers";
+import styles from "./sign-up.module.css";
+import { signUp } from "@/actions/auth"; // Import the server action
 
-const SignUp = async () => {
-  const cookieStore = await cookies();
-  const error = cookieStore.get("error")?.value;
+interface SignUpProps {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+export default function SignUp({ searchParams }: SignUpProps) {
+  const error = searchParams?.error; // Access error from URL query parameters
 
   return (
     <AuthBackground>
@@ -21,29 +25,27 @@ const SignUp = async () => {
           </Link>
         </p>
         {error && <div className="text-red-500 mt-[16px]">{error}</div>}
-        <form
-          method="POST"
-          action="/api/signup"
-          className="flex w-full mt-[32px] flex-wrap"
-        >
-          <div className="lg:w-auto w-full">
+        <form action={signUp} className="flex w-full mt-[32px] flex-wrap">
+          <div className={`${styles.inputText}`}>
             <h1 className="text-[#666666] tracking-[0] leading-[100%]">
               First Name
             </h1>
             <input
               type="text"
               name="firstName"
-              className="lg:w-[320.5px] w-full pl-[10px] mt-[4px] h-[56px] rounded-[12px] border border-[#66666659]"
+              required
+              className="w-full pl-[10px] mt-[4px] h-[56px] rounded-[12px] border border-[#66666659]"
             />
           </div>
-          <div className="ml-auto lg:w-auto w-full mt-[32px] lg:mt-0">
+          <div className={`ml-auto ${styles.inputText} ${styles.marginTop}`}>
             <h1 className="text-[#666666] tracking-[0] leading-[100%]">
               Last Name
             </h1>
             <input
               type="text"
               name="lastName"
-              className="lg:w-[320.5px] h-[56px] w-full pl-[10px] mt-[4px] rounded-[12px] border border-[#66666659]"
+              required
+              className="h-[56px] w-full pl-[10px] mt-[4px] rounded-[12px] border border-[#66666659]"
             />
           </div>
           <div className="w-full mt-[32px]">
@@ -51,8 +53,9 @@ const SignUp = async () => {
               Email
             </h1>
             <input
-              type="email" // Changed to type="email" for better validation
+              type="email"
               name="email"
+              required
               className="w-[100%] pl-[10px] h-[56px] mt-[4px] rounded-[12px] border border-[#66666659]"
             />
           </div>
@@ -60,17 +63,20 @@ const SignUp = async () => {
             <span className="text-[#666666] tracking-[0] leading-[100%]">
               Password
             </span>
-            <button className="text-[#666666] ml-auto tracking-[0] leading-[100%]">
+            <button
+              type="button"
+              className="text-[#666666] ml-auto tracking-[0] leading-[100%]"
+            >
               Hide
             </button>
             <input
               type="password"
               name="password"
+              required
               className="w-[100%] pl-[10px] h-[56px] mt-[4px] rounded-[12px] border border-[#66666659]"
             />
           </div>
           <div className="flex mt-[8px] flex-wrap gap-x-[26px] gap-y-[16px]">
-            {/* Password requirements remain unchanged */}
             <div className="font-[400] text-[14px] leading-[100%] tracking-[0] text-[#66666699] flex items-center gap-[8px]">
               <div className="w-[8px] h-[8px] rounded-[50%] bg-[#66666699]"></div>
               <div>Use 8 or more characters</div>
@@ -96,7 +102,6 @@ const SignUp = async () => {
             <input
               type="checkbox"
               name="receiveEmails"
-              style={{ background: "black" }}
               className="w-[18px] h-[18px] checked:bg-black self-center"
             />
             <span className="ml-[11px]">
@@ -112,7 +117,6 @@ const SignUp = async () => {
             type="submit"
             text="Create an Account"
             textSize="22px"
-            disabled={false}
             height="64px"
             className="w-full rounded-[32px] mt-[40px]"
           />
@@ -120,6 +124,4 @@ const SignUp = async () => {
       </div>
     </AuthBackground>
   );
-};
-
-export default SignUp;
+}
