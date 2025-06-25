@@ -10,25 +10,41 @@ export async function signUp(formData: FormData) {
   const password = formData.get("password");
   const receiveEmails = formData.get("receiveEmails") === "on";
 
-  // Set cookies with form data
   cookieStore.set("firstName", String(firstName), { path: "/" });
   cookieStore.set("lastName", String(lastName), { path: "/" });
   cookieStore.set("email", String(email), { path: "/" });
-  cookieStore.set("password", String(password), { path: "/", secure: true }); // Secure for sensitive data
+  cookieStore.set("password", String(password), { path: "/", secure: true });
   cookieStore.set("receiveEmails", receiveEmails.toString(), { path: "/" });
 
-  // Basic server-side validation
   if (!firstName || !lastName || !email || !password) {
     redirect("/sign-up?error=Missing required fields");
   }
 
-  // Simulate user creation (replace with actual backend logic)
   const userCreated = true; // Placeholder
 
   if (!userCreated) {
     redirect("/sign-up?error=Failed to create user");
   }
 
-  // On success, redirect to dashboard
+  redirect("/dashboard");
+}
+
+export async function login(formData: FormData) {
+  const cookieStore = await cookies();
+  const email = formData.get("email");
+  const password = formData.get("password");
+
+  if (!email || !password) {
+    redirect("/login?error=Missing required fields");
+  }
+
+  const isAuthenticated = true; // Placeholder
+
+  if (!isAuthenticated) {
+    redirect("/login?error=Invalid credentials");
+  }
+
+  cookieStore.set("email", String(email), { path: "/" });
+
   redirect("/dashboard");
 }

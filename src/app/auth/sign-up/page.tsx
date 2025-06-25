@@ -13,7 +13,7 @@ export default function SignUp({ searchParams }: SignUpProps) {
   const error = searchParams?.error; // Access error from URL query parameters
 
   return (
-    <AuthBackground>
+    <AuthBackground scroll={true}>
       <div className="pt-[88px] poppins text-black overflow-scroll lg:max-w-[665px]">
         <h1 className="font-[500] text-[32px] tracking-[0]">
           Welcome to QuantumQuill

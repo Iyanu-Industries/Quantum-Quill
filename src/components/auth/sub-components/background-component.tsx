@@ -1,11 +1,21 @@
 import React from "react";
 import Image from "next/image";
 import styles from "./authBackground.module.css";
-const Background = ({ children }: { children: React.ReactNode }) => {
+const Background = ({
+  children,
+  scroll,
+}: {
+  children: React.ReactNode;
+  scroll?: boolean;
+}) => {
   return (
     <div className="flex h-screen">
       <div
-        className={`w-[100%] lg:w-[58%] bg-white pl-[6.11vw] pr-[6.25vw] overflow-scroll pb-[163px] ${styles.scrollbarNone}`}
+        className={`w-[100%] lg:w-[58%] bg-white pl-[6.11vw] pr-[6.25vw] ${
+          scroll
+            ? "overflow-scroll pb-[163px]"
+            : "overflow-hidden flex items-center"
+        }  ${styles.scrollbarNone}`}
       >
         {children}
       </div>
