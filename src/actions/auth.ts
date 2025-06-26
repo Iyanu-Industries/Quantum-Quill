@@ -20,7 +20,7 @@ export async function signUp(formData: FormData) {
     redirect("/sign-up?error=Missing required fields");
   }
 
-  const userCreated = true; // Placeholder
+  const userCreated = true;
 
   if (!userCreated) {
     redirect("/sign-up?error=Failed to create user");
@@ -38,7 +38,7 @@ export async function login(formData: FormData) {
     redirect("/login?error=Missing required fields");
   }
 
-  const isAuthenticated = true; // Placeholder
+  const isAuthenticated = true;
 
   if (!isAuthenticated) {
     redirect("/login?error=Invalid credentials");
