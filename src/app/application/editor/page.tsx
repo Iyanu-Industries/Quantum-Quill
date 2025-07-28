@@ -1,694 +1,898 @@
-'use client'
-import React, { useState, useEffect, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial, OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
-import * as random from 'maath/random/dist/maath-random.esm';
-import { Code, Shield, Zap, Globe, Users, MessageSquare, Github, Twitter, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
+// components/DocumentEditor.tsx
+"use client";
 
-// Floating particles component for 3D background
-function Particles(props) {
-  const ref = useRef();
-  const [sphere] = useState(() => random.inSphere(new Float32Array(2000), { radius: 1.5 }));
+import React, { useState, useEffect, useRef } from "react";
+import { saveAs } from "file-saver";
+import JSZip from "jszip";
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import * as Mammoth from "mammoth";
 
-  useFrame((state, delta) => {
-    ref.current.rotation.x -= delta / 10;
-    ref.current.rotation.y -= delta / 15;
-  });
-
-  return (
-    <group rotation={[0, 0, Math.PI / 4]}>
-      <Points ref={ref} positions={sphere} stride={3} frustumCulled={false} {...props}>
-        <PointMaterial
-          transparent
-          color="#8b5cf6"
-          size={0.005}
-          sizeAttenuation={true}
-          depthWrite={false}
-        />
-      </Points>
-    </group>
-  );
+// Define TypeScript interfaces
+interface DocumentStats {
+  words: number;
+  characters: number;
+  pages: number;
+  charsNoSpaces: number;
+  charsWithSpaces: number;
+  paragraphs: number;
+  lines: number;
 }
 
-// Floating sphere component
-function FloatingSphere() {
-  const meshRef = useRef();
-
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    meshRef.current.position.y = Math.sin(time) * 0.1;
-    meshRef.current.rotation.x = time * 0.2;
-    meshRef.current.rotation.y = time * 0.3;
-  });
-
-  return (
-    <Sphere ref={meshRef} args={[1, 100, 200]} scale={0.8}>
-      <MeshDistortMaterial
-        color="#6366f1"
-        attach="material"
-        distort={0.3}
-        speed={2}
-        roughness={0.4}
-      />
-    </Sphere>
-  );
+interface FindReplaceState {
+  active: boolean;
+  findInput: string;
+  replaceInput: string;
 }
 
-const App = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
+interface ModalState {
+  wordCount: boolean;
+  insertLink: boolean;
+}
 
+interface PageSetup {
+  pageSize: string;
+  marginSize: number;
+  fontSize: string;
+  fontFamily: string;
+}
+
+interface DocumentState {
+  currentDoc: File | null;
+  currentZip: JSZip | null;
+}
+
+const DocumentEditor: React.FC = () => {
+  // Refs
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State variables with types
+  const [findReplace, setFindReplace] = useState<FindReplaceState>({
+    active: false,
+    findInput: "",
+    replaceInput: "",
+  });
+
+  const [modals, setModals] = useState<ModalState>({
+    wordCount: false,
+    insertLink: false,
+  });
+
+  const [documentState, setDocumentState] = useState<DocumentState>({
+    currentDoc: null,
+    currentZip: null,
+  });
+
+  const [findIndex, setFindIndex] = useState<number>(0);
+  const [findResults, setFindResults] = useState<Array<Range>>([]);
+
+  const [stats, setStats] = useState<DocumentStats>({
+    words: 0,
+    characters: 0,
+    pages: 1,
+    charsNoSpaces: 0,
+    charsWithSpaces: 0,
+    paragraphs: 0,
+    lines: 0,
+  });
+
+  const [pageSetup, setPageSetup] = useState<PageSetup>({
+    pageSize: "a4",
+    marginSize: 1,
+    fontSize: "12",
+    fontFamily: "'Times New Roman', serif",
+  });
+
+  // Initialize editor
   useEffect(() => {
-    const handleScroll = () => {
-      const sections = ['home', 'services', 'portfolio', 'process', 'testimonials', 'contact'];
-      const scrollPosition = window.scrollY + 100;
+    updateWordCount();
 
-      for (const section of sections) {
-        const element = document.getElementById(section);
-        if (element) {
-          const { offsetTop, offsetHeight } = element;
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setActiveSection(section);
-            break;
-          }
-        }
-      }
+    // Dynamically load Font Awesome
+    const loadFontAwesome = () => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href =
+        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
+      document.head.appendChild(link);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    if (typeof window !== "undefined") {
+      loadFontAwesome();
+    }
   }, []);
 
-  const services = [
-    {
-      icon: <Code className="w-8 h-8" />,
-      title: "Smart Contract Development",
-      description: "Custom Solidity contracts for DeFi, NFTs, and decentralized applications with security-first approach."
-    },
-    {
-      icon: <Shield className="w-8 h-8" />,
-      title: "Security Auditing",
-      description: "Comprehensive smart contract audits and vulnerability assessments to protect your protocols."
-    },
-    {
-      icon: <Globe className="w-8 h-8" />,
-      title: "DApp Development",
-      description: "Full-stack decentralized applications with seamless Web3 integration and modern UI/UX."
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Blockchain Integration",
-      description: "Integrate blockchain technology into existing systems with cross-chain compatibility."
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: "DAO Development",
-      description: "Build decentralized autonomous organizations with governance and token systems."
-    },
-    {
-      icon: <MessageSquare className="w-8 h-8" />,
-      title: "Web3 Consulting",
-      description: "Strategic guidance for tokenomics, architecture, and blockchain implementation."
-    }
-  ];
+  // Update word count whenever editor content changes
+  const handleEditorInput = () => {
+    updateWordCount();
+  };
 
-  const portfolioItems = [
-    {
-      title: "DeFi Yield Protocol",
-      description: "Automated yield farming platform with multi-chain support",
-      tech: ["Solidity", "React", "Web3.js"],
-      image: "https://placehold.co/400x250/6366f1/ffffff?text=DeFi+Protocol"
-    },
-    {
-      title: "NFT Marketplace",
-      description: "Peer-to-peer NFT trading platform with royalties system",
-      tech: ["Solidity", "Next.js", "IPFS"],
-      image: "https://placehold.co/400x250/8b5cf6/ffffff?text=NFT+Marketplace"
-    },
-    {
-      title: "DAO Governance",
-      description: "Decentralized voting and proposal system for community governance",
-      tech: ["Solidity", "React", "Snapshot"],
-      image: "https://placehold.co/400x250/10b981/ffffff?text=DAO+Platform"
+  // Core editor functions
+  const newDocument = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to start a new document? Unsaved changes will be lost."
+      )
+    ) {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = "<p><br></p>";
+      }
+      updateWordCount();
     }
-  ];
+  };
 
-  const processSteps = [
-    {
-      step: "01",
-      title: "Discovery",
-      description: "Understand your project requirements and technical specifications"
-    },
-    {
-      step: "02",
-      title: "Planning",
-      description: "Create detailed architecture and development roadmap"
-    },
-    {
-      step: "03",
-      title: "Development",
-      description: "Build and iterate with continuous feedback loops"
-    },
-    {
-      step: "04",
-      title: "Testing",
-      description: "Rigorous testing including security audits"
-    },
-    {
-      step: "05",
-      title: "Deployment",
-      description: "Launch and monitor with ongoing support"
-    }
-  ];
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "CTO, DeFiStart",
-      content: "CryptoCanvas delivered our yield farming protocol ahead of schedule with exceptional code quality.",
-      avatar: "https://placehold.co/60x60/6366f1/ffffff?text=SJ"
-    },
-    {
-      name: "Michael Chen",
-      role: "Founder, NFT Gallery",
-      content: "Their smart contract expertise saved us from potential vulnerabilities. Highly recommended!",
-      avatar: "https://placehold.co/60x60/8b5cf6/ffffff?text=MC"
-    },
-    {
-      name: "David Rodriguez",
-      role: "CEO, DAO Collective",
-      content: "Professional, responsive, and technically brilliant. Our governance system is flawless.",
-      avatar: "https://placehold.co/60x60/10b981/ffffff?text=DR"
+    setDocumentState((prev) => ({ ...prev, currentDoc: file }));
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const result = e.target?.result;
+      if (result instanceof ArrayBuffer) {
+        loadDocument(result);
+      }
+    };
+    reader.readAsArrayBuffer(file); // This ensures result is ArrayBuffer
+  };
+
+  // Install: npm install mammoth @types/mammoth
+
+  // Replace the loadDocument function with:
+  const loadDocument = async (data: ArrayBuffer) => {
+    try {
+      const result = await Mammoth.convertToHtml({ arrayBuffer: data });
+      if (editorRef.current) {
+        editorRef.current.innerHTML = result.value;
+      }
+      updateWordCount();
+    } catch (error) {
+      console.error("Error loading document:", error);
+      alert("Error loading document: " + (error as Error).message);
     }
-  ];
+  };
+
+  const saveDocument = async () => {
+    if (!documentState.currentZip) {
+      // Create a simple text file if no DOCX was loaded
+      const content = editorRef.current?.innerText || "";
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      saveAs(blob, "document.txt");
+      return;
+    }
+
+    try {
+      // Load the template with docxtemplater
+      const zip = new JSZip();
+      const content = await zip.loadAsync(documentState.currentDoc!);
+
+      // Extract text content from editor
+      const editorContent = editorRef.current?.innerText || "";
+
+      // For this example, we'll create a simple DOCX with the content
+      // In a real implementation, you'd use docxtemplater properly
+      const newZip = new JSZip();
+
+      // Copy all files from the original zip except document.xml
+      for (const [key, value] of Object.entries(content.files)) {
+        if (key !== "word/document.xml") {
+          const fileData = await value.async("blob");
+          newZip.file(key, fileData);
+        }
+      }
+
+      // Create a new document.xml with the content
+      const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:t>${editorContent
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "<")
+          .replace(/>/g, ">")}</w:t>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>`;
+
+      newZip.file("word/document.xml", documentXml);
+
+      // Generate the new DOCX file
+      const blob = await newZip.generateAsync({ type: "blob" });
+      saveAs(blob, "edited-document.docx");
+    } catch (error) {
+      console.error("Error saving document:", error);
+      alert("Error saving document. Saving as text instead.");
+
+      // Fallback to text save
+      const content = editorRef.current?.innerText || "";
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      saveAs(blob, "document.txt");
+    }
+  };
+
+  const printDocument = () => {
+    window.print();
+  };
+
+  const toggleFormat = (command: string) => {
+    document.execCommand(command, false, undefined);
+    updateButtonState();
+  };
+
+  const setAlignment = (alignment: string) => {
+    document.execCommand(
+      "justify" + alignment.charAt(0).toUpperCase() + alignment.slice(1),
+      false,
+      undefined
+    );
+    updateButtonState();
+  };
+
+  const changeFontSize = () => {
+    const size = pageSetup.fontSize;
+    document.execCommand("fontSize", false, "7"); // Use a placeholder
+
+    // Find the font elements and set the correct size
+    if (editorRef.current) {
+      const fontElements = editorRef.current.querySelectorAll('font[size="7"]');
+      fontElements.forEach((el) => {
+        el.removeAttribute("size");
+        (el as HTMLElement).style.fontSize = size + "pt";
+      });
+    }
+  };
+
+  const changeFontFamily = () => {
+    const fontFamilyValue = pageSetup.fontFamily;
+    document.execCommand("fontName", false, fontFamilyValue);
+  };
+
+  const showInsertLinkModal = () => {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString() || "";
+
+    setModals((prev) => ({ ...prev, insertLink: true }));
+    setFindReplace((prev) => ({
+      ...prev,
+      findInput: selectedText,
+      replaceInput: "",
+    }));
+  };
+
+  const insertLink = () => {
+    const text = findReplace.findInput || findReplace.replaceInput;
+    const url = findReplace.replaceInput;
+    if (!url) {
+      alert("Please enter a URL");
+      return;
+    }
+    document.execCommand("createLink", false, url);
+    setModals((prev) => ({ ...prev, insertLink: false }));
+  };
+
+  const insertImage = () => {
+    const url = prompt("Enter image URL:");
+    if (url) {
+      document.execCommand("insertImage", false, url);
+    }
+  };
+
+  const insertTable = () => {
+    const rows = prompt("Enter number of rows:", "3");
+    const cols = prompt("Enter number of columns:", "3");
+    if (rows && cols) {
+      let tableHTML =
+        '<table border="1" style="border-collapse: collapse; width: 100%;">';
+      for (let i = 0; i < parseInt(rows); i++) {
+        tableHTML += "<tr>";
+        for (let j = 0; j < parseInt(cols); j++) {
+          tableHTML +=
+            '<td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>';
+        }
+        tableHTML += "</tr>";
+      }
+      tableHTML += "</table>";
+      document.execCommand("insertHTML", false, tableHTML);
+    }
+  };
+
+  const toggleFindReplace = () => {
+    setFindReplace((prev) => ({ ...prev, active: !prev.active }));
+    if (!findReplace.active) {
+      // Focus on find input when panel opens
+      setTimeout(() => {
+        const findInputEl = document.getElementById("findInput");
+        if (findInputEl) findInputEl.focus();
+      }, 100);
+    }
+  };
+
+  const findPrevious = () => {
+    alert("Finding previous match for: " + findReplace.findInput);
+  };
+
+  const findNext = () => {
+    alert("Finding next match for: " + findReplace.findInput);
+  };
+
+  const replaceAll = () => {
+    alert(
+      'Replacing all instances of "' +
+        findReplace.findInput +
+        '" with "' +
+        findReplace.replaceInput +
+        '"'
+    );
+  };
+
+  const showWordCount = () => {
+    updateWordCount(true);
+    setModals((prev) => ({ ...prev, wordCount: true }));
+  };
+
+  const updateWordCount = (updateModal: boolean = false) => {
+    const text = editorRef.current?.innerText || "";
+    const words = text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
+    const charsNoSpaces = text.replace(/\s/g, "").length;
+    const charsWithSpaces = text.length;
+    const paragraphs = text
+      .split(/\n+/)
+      .filter((p) => p.trim().length > 0).length;
+    const lines = text.split(/\n/).length;
+
+    // Update status bar
+    setStats({
+      words: words.length,
+      characters: charsWithSpaces,
+      pages: Math.ceil(lines / 25), // Approximation
+      charsNoSpaces,
+      charsWithSpaces,
+      paragraphs,
+      lines,
+    });
+
+    // Update modal if requested
+    if (updateModal) {
+      setModals((prev) => ({ ...prev, wordCount: true }));
+    }
+  };
+
+  const updatePageSetup = () => {
+    console.log("Page size:", pageSetup.pageSize);
+    console.log("Margin size:", pageSetup.marginSize);
+  };
+
+  const updateButtonState = () => {
+    // Update button active states based on current selection
+    // This is a simplified implementation
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const parentElement = range.commonAncestorContainer.parentElement;
+
+    // In a real implementation, you would update button states here
+    // This would require refs to each button to toggle their active state
+  };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-slate-900/90 backdrop-blur-sm border-b border-slate-800 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <motion.div 
-              className="flex items-center space-x-2"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
-                <Code className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                CryptoCanvas
-              </span>
-            </motion.div>
+    <div className="container">
+      <header>
+        <h1>
+          <i className="fas fa-file-word"></i> Document Editor
+        </h1>
+        <p className="subtitle">
+          Full-featured word processor with Google Docs-like functionality
+        </p>
+      </header>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {['Home', 'Services', 'Portfolio', 'Process', 'Testimonials', 'Contact'].map((item) => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  className={`transition-colors duration-200 ${
-                    activeSection === item.toLowerCase() 
-                      ? 'text-indigo-400' 
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-
-            {/* Mobile Menu Button */}
+      <div className="app-container">
+        <div className="toolbar">
+          <div className="toolbar-group">
             <button
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="toolbar-btn"
+              onClick={newDocument}
+              title="New Document"
             >
-              <div className="w-6 h-6 flex flex-col justify-center items-center">
-                <span className={`bg-white block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${isMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-0.5'}`}></span>
-                <span className={`bg-white block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm my-0.5 ${isMenuOpen ? 'opacity-0' : 'opacity-100'}`}></span>
-                <span className={`bg-white block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${isMenuOpen ? '-rotate-45 -translate-y-1' : 'translate-y-0.5'}`}></span>
-              </div>
+              <i className="fas fa-file"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Open Document"
+            >
+              <i className="fas fa-folder-open"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={saveDocument}
+              title="Save Document"
+            >
+              <i className="fas fa-save"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={printDocument}
+              title="Print"
+            >
+              <i className="fas fa-print"></i>
+            </button>
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={() => document.execCommand("undo", false, undefined)}
+              title="Undo"
+            >
+              <i className="fas fa-undo"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => document.execCommand("redo", false, undefined)}
+              title="Redo"
+            >
+              <i className="fas fa-redo"></i>
+            </button>
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={() => toggleFormat("bold")}
+              title="Bold"
+            >
+              <i className="fas fa-bold"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => toggleFormat("italic")}
+              title="Italic"
+            >
+              <i className="fas fa-italic"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => toggleFormat("underline")}
+              title="Underline"
+            >
+              <i className="fas fa-underline"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => toggleFormat("strikethrough")}
+              title="Strikethrough"
+            >
+              <i className="fas fa-strikethrough"></i>
+            </button>
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={() => setAlignment("left")}
+              title="Align Left"
+            >
+              <i className="fas fa-align-left"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => setAlignment("center")}
+              title="Align Center"
+            >
+              <i className="fas fa-align-center"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => setAlignment("right")}
+              title="Align Right"
+            >
+              <i className="fas fa-align-right"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => setAlignment("justify")}
+              title="Justify"
+            >
+              <i className="fas fa-align-justify"></i>
+            </button>
+          </div>
+
+          <div className="toolbar-group">
+            <select
+              value={pageSetup.fontSize}
+              onChange={(e) => {
+                setPageSetup((prev) => ({ ...prev, fontSize: e.target.value }));
+                changeFontSize();
+              }}
+              id="fontSize"
+            >
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="22">22</option>
+              <option value="24">24</option>
+              <option value="26">26</option>
+              <option value="28">28</option>
+              <option value="36">36</option>
+              <option value="48">48</option>
+              <option value="72">72</option>
+            </select>
+
+            <select
+              value={pageSetup.fontFamily}
+              onChange={(e) => {
+                setPageSetup((prev) => ({
+                  ...prev,
+                  fontFamily: e.target.value,
+                }));
+                changeFontFamily();
+              }}
+              id="fontFamily"
+            >
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="'Times New Roman', serif">Times New Roman</option>
+              <option value="'Courier New', monospace">Courier New</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+              <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+            </select>
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={showInsertLinkModal}
+              title="Insert Link"
+            >
+              <i className="fas fa-link"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={insertImage}
+              title="Insert Image"
+            >
+              <i className="fas fa-image"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={insertTable}
+              title="Insert Table"
+            >
+              <i className="fas fa-table"></i>
+            </button>
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={() =>
+                document.execCommand("insertUnorderedList", false, undefined)
+              }
+              title="Bulleted List"
+            >
+              <i className="fas fa-list-ul"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() =>
+                document.execCommand("insertOrderedList", false, undefined)
+              }
+              title="Numbered List"
+            >
+              <i className="fas fa-list-ol"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => document.execCommand("indent", false, undefined)}
+              title="Increase Indent"
+            >
+              <i className="fas fa-indent"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={() => document.execCommand("outdent", false, undefined)}
+              title="Decrease Indent"
+            >
+              <i className="fas fa-outdent"></i>
+            </button>
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={toggleFindReplace}
+              title="Find & Replace"
+            >
+              <i className="fas fa-search"></i>
+            </button>
+            <button
+              className="toolbar-btn"
+              onClick={showWordCount}
+              title="Word Count"
+            >
+              <i className="fas fa-font"></i>
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <motion.div 
-            className="md:hidden bg-slate-800 border-t border-slate-700"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {['Home', 'Services', 'Portfolio', 'Process', 'Testimonials', 'Contact'].map((item) => (
-                <a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  className="block px-3 py-2 text-slate-300 hover:text-white transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item}
-                </a>
-              ))}
+        <div className="editor-container">
+          <div className="sidebar">
+            <div className="sidebar-section">
+              <h3>Recent Documents</h3>
+              <div className="document-list">
+                <div className="document-item">
+                  <h4>Project Proposal</h4>
+                  <p>Last edited: Today</p>
+                </div>
+                <div className="document-item">
+                  <h4>Meeting Notes</h4>
+                  <p>Last edited: Yesterday</p>
+                </div>
+                <div className="document-item">
+                  <h4>Research Paper</h4>
+                  <p>Last edited: 2 days ago</p>
+                </div>
+              </div>
             </div>
-          </motion.div>
-        )}
-      </nav>
 
-      {/* Hero Section with 3D Background */}
-      <section id="home" className="pt-16 min-h-screen flex items-center relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Canvas camera={{ position: [0, 0, 1] }}>
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <Particles />
-            <FloatingSphere />
-            <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
-          </Canvas>
-        </div>
-        
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 z-10"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <h1 className="text-5xl lg:text-7xl font-bold mb-6">
-                <span className="block">Web3</span>
-                <span className="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                  Development
-                </span>
-                <span className="block">Studio</span>
-              </h1>
-              <p className="text-xl text-slate-300 mb-8 leading-relaxed">
-                We build secure, scalable blockchain solutions using Solidity and cutting-edge Web3 technologies. 
-                Transform your ideas into decentralized reality.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25"
-                >
-                  Start Your Project
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 border border-slate-600 text-white rounded-lg font-semibold transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-400/10"
-                >
-                  View Portfolio
-                </motion.button>
-              </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="relative bg-slate-800/50 backdrop-blur-sm rounded-2xl p-8 border border-slate-700">
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur-xl opacity-30"></div>
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                      <Code className="w-6 h-6 text-indigo-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Smart Contracts</h3>
-                      <p className="text-slate-400 text-sm">Secure, audited Solidity code</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                      <Globe className="w-6 h-6 text-purple-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">DApp Development</h3>
-                      <p className="text-slate-400 text-sm">Modern, responsive interfaces</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                      <Shield className="w-6 h-6 text-emerald-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Security First</h3>
-                      <p className="text-slate-400 text-sm">Rigorous testing and audits</p>
-                    </div>
-                  </div>
+            <div className="sidebar-section">
+              <h3>Templates</h3>
+              <div className="document-list">
+                <div className="document-item">
+                  <h4>Business Letter</h4>
+                  <p>Professional letter template</p>
+                </div>
+                <div className="document-item">
+                  <h4>Resume</h4>
+                  <p>Modern resume template</p>
                 </div>
               </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Services Section */}
-      <section id="services" className="py-20 bg-slate-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold mb-4">Our Services</h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Comprehensive Web3 development solutions tailored to your blockchain needs
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -5 }}
-                className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700 hover:border-indigo-500/50 transition-all duration-300"
-              >
-                <div className="text-indigo-400 mb-4">{service.icon}</div>
-                <h3 className="text-xl font-semibold mb-3 text-white">{service.title}</h3>
-                <p className="text-slate-400 leading-relaxed">{service.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Portfolio Section */}
-      <section id="portfolio" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold mb-4">Featured Projects</h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Showcasing our expertise in decentralized application development
-            </p>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {portfolioItems.map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -10 }}
-                className="bg-slate-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-slate-700 hover:border-purple-500/50 transition-all duration-300"
-              >
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={item.image} 
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2 text-white">{item.title}</h3>
-                  <p className="text-slate-400 mb-4">{item.description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {item.tech.map((tech, techIndex) => (
-                      <span 
-                        key={techIndex}
-                        className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Process Section */}
-      <section id="process" className="py-20 bg-slate-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold mb-4">Our Development Process</h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              A structured approach to delivering exceptional Web3 solutions
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
-            {processSteps.map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                    {step.step}
-                  </div>
-                  {index < processSteps.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-                  )}
-                </div>
-                <h3 className="text-lg font-semibold mb-2 text-white">{step.title}</h3>
-                <p className="text-slate-400 text-sm">{step.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold mb-4">Client Testimonials</h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              What our clients say about working with CryptoCanvas
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700"
-              >
-                <div className="flex items-center mb-4">
-                  <img 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
-                  <div>
-                    <h4 className="font-semibold text-white">{testimonial.name}</h4>
-                    <p className="text-slate-400 text-sm">{testimonial.role}</p>
-                  </div>
-                </div>
-                <p className="text-slate-300 italic">"{testimonial.content}"</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 bg-slate-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Ready to build your next Web3 project? Let's discuss your vision.
-            </p>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-2 gap-12">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-2xl font-semibold mb-6 text-white">Contact Information</h3>
-              <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center">
-                    <Mail className="w-6 h-6 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white">Email</h4>
-                    <p className="text-slate-400">hello@cryptocanvas.dev</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Phone className="w-6 h-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white">Phone</h4>
-                    <p className="text-slate-400">+1 (555) 123-4567</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-white">Location</h4>
-                    <p className="text-slate-400">San Francisco, CA</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold mb-4 text-white">Follow Us</h4>
-                <div className="flex space-x-4">
-                  <motion.a
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    href="#"
-                    className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center hover:bg-indigo-500 transition-colors"
-                  >
-                    <Github className="w-6 h-6 text-white" />
-                  </motion.a>
-                  <motion.a
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    href="#"
-                    className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center hover:bg-blue-400 transition-colors"
-                  >
-                    <Twitter className="w-6 h-6 text-white" />
-                  </motion.a>
-                  <motion.a
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    href="#"
-                    className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
-                  >
-                    <Linkedin className="w-6 h-6 text-white" />
-                  </motion.a>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700"
-            >
-              <form className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white"
-                    placeholder="Your name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white"
-                    placeholder="your@email.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Project Type</label>
-                  <select className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white">
-                    <option>Smart Contract Development</option>
-                    <option>DApp Development</option>
-                    <option>Security Audit</option>
-                    <option>Blockchain Integration</option>
-                    <option>Consulting</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Message</label>
-                  <textarea
-                    rows={5}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white"
-                    placeholder="Tell us about your project..."
-                  ></textarea>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  className="w-full px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/25"
-                >
-                  Send Message
-                </motion.button>
-              </form>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center">
-                <Code className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                CryptoCanvas
-              </span>
             </div>
-            <div className="text-slate-400 text-center md:text-right">
-              <p>&copy; 2024 CryptoCanvas. All rights reserved.</p>
-              <p className="mt-1 text-sm">Building the decentralized future, one contract at a time.</p>
+          </div>
+
+          <div className="main-content">
+            <div className="document-area">
+              <div
+                ref={editorRef}
+                id="editor"
+                contentEditable="true"
+                onInput={handleEditorInput}
+                onKeyUp={handleEditorInput}
+                onMouseUp={handleEditorInput}
+                // Remove dangerouslySetInnerHTML to prevent cursor jumping
+                // Initial content is set in useEffect
+              />
+            </div>
+
+            <div className="status-bar">
+              <div className="page-setup">
+                <label>Page Size:</label>
+                <select
+                  value={pageSetup.pageSize}
+                  onChange={(e) => {
+                    setPageSetup((prev) => ({
+                      ...prev,
+                      pageSize: e.target.value,
+                    }));
+                    updatePageSetup();
+                  }}
+                >
+                  <option value="letter">Letter (8.5" x 11")</option>
+                  <option value="a4">A4 (210mm x 297mm)</option>
+                  <option value="legal">Legal (8.5" x 14")</option>
+                </select>
+                <label>Margins:</label>
+                <input
+                  type="number"
+                  value={pageSetup.marginSize}
+                  onChange={(e) => {
+                    setPageSetup((prev) => ({
+                      ...prev,
+                      marginSize: parseFloat(e.target.value),
+                    }));
+                    updatePageSetup();
+                  }}
+                  min="0.1"
+                  step="0.1"
+                />{" "}
+                inches
+              </div>
+              <div>
+                Words: <span id="wordCount">{stats.words}</span> | Characters:{" "}
+                <span id="charCount">{stats.characters}</span>
+              </div>
             </div>
           </div>
         </div>
-      </footer>
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".docx"
+        style={{ display: "none" }}
+      />
+
+      {/* Find & Replace Panel */}
+      <div
+        className={`find-replace ${findReplace.active ? "active" : ""}`}
+        id="findReplacePanel"
+      >
+        <h3>
+          Find & Replace
+          <button
+            className="close-btn"
+            onClick={() =>
+              setFindReplace((prev) => ({ ...prev, active: false }))
+            }
+          >
+            &times;
+          </button>
+        </h3>
+        <input
+          type="text"
+          id="findInput"
+          value={findReplace.findInput}
+          onChange={(e) =>
+            setFindReplace((prev) => ({ ...prev, findInput: e.target.value }))
+          }
+          placeholder="Find"
+        />
+        <input
+          type="text"
+          id="replaceInput"
+          value={findReplace.replaceInput}
+          onChange={(e) =>
+            setFindReplace((prev) => ({
+              ...prev,
+              replaceInput: e.target.value,
+            }))
+          }
+          placeholder="Replace with"
+        />
+        <div className="find-replace-buttons">
+          <button className="btn-secondary" onClick={findPrevious}>
+            Previous
+          </button>
+          <button className="btn-secondary" onClick={findNext}>
+            Next
+          </button>
+          <button className="btn-primary" onClick={replaceAll}>
+            Replace All
+          </button>
+        </div>
+      </div>
+
+      {/* Word Count Modal */}
+      <div
+        className={`modal ${modals.wordCount ? "active" : ""}`}
+        id="wordCountModal"
+      >
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2>Document Statistics</h2>
+            <button
+              className="close-btn"
+              onClick={() =>
+                setModals((prev) => ({ ...prev, wordCount: false }))
+              }
+            >
+              &times;
+            </button>
+          </div>
+          <div className="modal-body">
+            <p>
+              <strong>Pages:</strong> <span id="pagesCount">{stats.pages}</span>
+            </p>
+            <p>
+              <strong>Words:</strong>{" "}
+              <span id="modalWordCount">{stats.words}</span>
+            </p>
+            <p>
+              <strong>Characters (no spaces):</strong>{" "}
+              <span id="charsNoSpacesCount">{stats.charsNoSpaces}</span>
+            </p>
+            <p>
+              <strong>Characters (with spaces):</strong>{" "}
+              <span id="charsWithSpacesCount">{stats.charsWithSpaces}</span>
+            </p>
+            <p>
+              <strong>Paragraphs:</strong>{" "}
+              <span id="paragraphsCount">{stats.paragraphs}</span>
+            </p>
+            <p>
+              <strong>Lines:</strong> <span id="linesCount">{stats.lines}</span>
+            </p>
+          </div>
+          <div className="modal-footer">
+            <button
+              className="btn-secondary"
+              onClick={() =>
+                setModals((prev) => ({ ...prev, wordCount: false }))
+              }
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Insert Link Modal */}
+      <div
+        className={`modal ${modals.insertLink ? "active" : ""}`}
+        id="insertLinkModal"
+      >
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2>Insert Link</h2>
+            <button
+              className="close-btn"
+              onClick={() =>
+                setModals((prev) => ({ ...prev, insertLink: false }))
+              }
+            >
+              &times;
+            </button>
+          </div>
+          <div className="modal-body">
+            <label htmlFor="linkText">Text to display</label>
+            <input
+              type="text"
+              id="linkText"
+              value={findReplace.findInput}
+              onChange={(e) =>
+                setFindReplace((prev) => ({
+                  ...prev,
+                  findInput: e.target.value,
+                }))
+              }
+              placeholder="Link text"
+            />
+            <label htmlFor="linkUrl">URL</label>
+            <input
+              type="url"
+              id="linkUrl"
+              value={findReplace.replaceInput}
+              onChange={(e) =>
+                setFindReplace((prev) => ({
+                  ...prev,
+                  replaceInput: e.target.value,
+                }))
+              }
+              placeholder="https://example.com"
+            />
+          </div>
+          <div className="modal-footer">
+            <button
+              className="btn-secondary"
+              onClick={() =>
+                setModals((prev) => ({ ...prev, insertLink: false }))
+              }
+            >
+              Cancel
+            </button>
+            <button className="btn-primary" onClick={insertLink}>
+              Insert
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default App;
+export default DocumentEditor;

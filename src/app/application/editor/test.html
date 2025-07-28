@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Full-Featured Document Editor</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.34.0/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1200px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        margin-top: 20px;
+      }
+
+      header {
+        background: linear-gradient(to right, #4b6cb7, #182848);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        position: relative;
+      }
+
+      h1 {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .app-container {
+        display: flex;
+        flex-direction: column;
+        height: 700px;
+      }
+
+      .toolbar {
+        background-color: #f8f9fa;
+        padding: 8px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .toolbar-group {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        padding-right: 15px;
+        border-right: 1px solid #ddd;
+      }
+
+      .toolbar-group:last-child {
+        border-right: none;
+      }
+
+      .toolbar-btn {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 6px 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .toolbar-btn:hover {
+        background: #f0f0f0;
+        border-color: #aaa;
+      }
+
+      .toolbar-btn.active {
+        background: #e3f2fd;
+        border-color: #2196f3;
+      }
+
+      select {
+        padding: 6px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: white;
+        font-size: 14px;
+      }
+
+      .editor-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        width: 250px;
+        background-color: #f5f7fa;
+        border-right: 1px solid #e0e0e0;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .sidebar-section {
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 15px;
+      }
+
+      .sidebar-section h3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .document-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .document-item {
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .document-item:hover {
+        background: #e3f2fd;
+        transform: translateX(5px);
+      }
+
+      .document-item h4 {
+        font-size: 15px;
+        margin-bottom: 5px;
+      }
+
+      .document-item p {
+        font-size: 13px;
+        color: #666;
+      }
+
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .document-area {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+        background-color: #fafafa;
+      }
+
+      #editor {
+        width: 100%;
+        min-height: 100%;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 40px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        outline: none;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .status-bar {
+        background-color: #f8f9fa;
+        padding: 8px 15px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: #666;
+      }
+
+      .page-setup {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .page-setup label {
+        font-size: 13px;
+      }
+
+      .page-setup input {
+        width: 50px;
+        padding: 4px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+
+      .find-replace {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        width: 350px;
+        z-index: 100;
+        display: none;
+      }
+
+      .find-replace.active {
+        display: block;
+      }
+
+      .find-replace h3 {
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .find-replace input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .find-replace-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .find-replace-buttons button {
+        flex: 1;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: #666;
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        display: none;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        width: 500px;
+        max-width: 90%;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .modal-header h2 {
+        font-size: 20px;
+      }
+
+      .modal-body {
+        margin-bottom: 20px;
+      }
+
+      .modal-body label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .modal-body input,
+      .modal-body select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .modal-footer button {
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .btn-primary {
+        background: #4285f4;
+        color: white;
+        border: none;
+      }
+
+      .btn-secondary {
+        background: #f1f3f4;
+        color: #3c4043;
+        border: 1px solid #dadce0;
+      }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          display: none;
+        }
+
+        .toolbar {
+          flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+          border-right: none;
+          padding-right: 0;
+          margin-right: 15px;
+          margin-bottom: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><i class="fas fa-file-word"></i> Document Editor</h1>
+        <p class="subtitle">
+          Full-featured word processor with Google Docs-like functionality
+        </p>
+      </header>
+
+      <div class="app-container">
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="newBtn" title="New Document">
+              <i class="fas fa-file"></i>
+            </button>
+            <button class="toolbar-btn" id="openBtn" title="Open Document">
+              <i class="fas fa-folder-open"></i>
+            </button>
+            <button class="toolbar-btn" id="saveBtn" title="Save Document">
+              <i class="fas fa-save"></i>
+            </button>
+            <button class="toolbar-btn" id="printBtn" title="Print">
+              <i class="fas fa-print"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="undoBtn" title="Undo">
+              <i class="fas fa-undo"></i>
+            </button>
+            <button class="toolbar-btn" id="redoBtn" title="Redo">
+              <i class="fas fa-redo"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="boldBtn" title="Bold">
+              <i class="fas fa-bold"></i>
+            </button>
+            <button class="toolbar-btn" id="italicBtn" title="Italic">
+              <i class="fas fa-italic"></i>
+            </button>
+            <button class="toolbar-btn" id="underlineBtn" title="Underline">
+              <i class="fas fa-underline"></i>
+            </button>
+            <button
+              class="toolbar-btn"
+              id="strikethroughBtn"
+              title="Strikethrough"
+            >
+              <i class="fas fa-strikethrough"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="alignLeftBtn" title="Align Left">
+              <i class="fas fa-align-left"></i>
+            </button>
+            <button
+              class="toolbar-btn"
+              id="alignCenterBtn"
+              title="Align Center"
+            >
+              <i class="fas fa-align-center"></i>
+            </button>
+            <button class="toolbar-btn" id="alignRightBtn" title="Align Right">
+              <i class="fas fa-align-right"></i>
+            </button>
+            <button class="toolbar-btn" id="justifyBtn" title="Justify">
+              <i class="fas fa-align-justify"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <select id="fontSize">
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12" selected>12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="22">22</option>
+              <option value="24">24</option>
+              <option value="26">26</option>
+              <option value="28">28</option>
+              <option value="36">36</option>
+              <option value="48">48</option>
+              <option value="72">72</option>
+            </select>
+
+            <select id="fontFamily">
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="'Times New Roman', serif" selected>
+                Times New Roman
+              </option>
+              <option value="'Courier New', monospace">Courier New</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+              <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="insertLinkBtn" title="Insert Link">
+              <i class="fas fa-link"></i>
+            </button>
+            <button
+              class="toolbar-btn"
+              id="insertImageBtn"
+              title="Insert Image"
+            >
+              <i class="fas fa-image"></i>
+            </button>
+            <button
+              class="toolbar-btn"
+              id="insertTableBtn"
+              title="Insert Table"
+            >
+              <i class="fas fa-table"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button
+              class="toolbar-btn"
+              id="bulletListBtn"
+              title="Bulleted List"
+            >
+              <i class="fas fa-list-ul"></i>
+            </button>
+            <button
+              class="toolbar-btn"
+              id="numberedListBtn"
+              title="Numbered List"
+            >
+              <i class="fas fa-list-ol"></i>
+            </button>
+            <button class="toolbar-btn" id="indentBtn" title="Increase Indent">
+              <i class="fas fa-indent"></i>
+            </button>
+            <button class="toolbar-btn" id="outdentBtn" title="Decrease Indent">
+              <i class="fas fa-outdent"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-group">
+            <button
+              class="toolbar-btn"
+              id="findReplaceBtn"
+              title="Find & Replace"
+            >
+              <i class="fas fa-search"></i>
+            </button>
+            <button class="toolbar-btn" id="wordCountBtn" title="Word Count">
+              <i class="fas fa-font"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="editor-container">
+          <div class="sidebar">
+            <div class="sidebar-section">
+              <h3>Recent Documents</h3>
+              <div class="document-list">
+                <div class="document-item">
+                  <h4>Project Proposal</h4>
+                  <p>Last edited: Today</p>
+                </div>
+                <div class="document-item">
+                  <h4>Meeting Notes</h4>
+                  <p>Last edited: Yesterday</p>
+                </div>
+                <div class="document-item">
+                  <h4>Research Paper</h4>
+                  <p>Last edited: 2 days ago</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-section">
+              <h3>Templates</h3>
+              <div class="document-list">
+                <div class="document-item">
+                  <h4>Business Letter</h4>
+                  <p>Professional letter template</p>
+                </div>
+                <div class="document-item">
+                  <h4>Resume</h4>
+                  <p>Modern resume template</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="main-content">
+            <div class="document-area">
+              <div id="editor" contenteditable="true">
+                <h1>Welcome to Document Editor</h1>
+                <p>
+                  This is a fully-featured word processor with all the core
+                  editing capabilities of Google Docs.
+                </p>
+
+                <h2>Features:</h2>
+                <ul>
+                  <li>Text formatting (bold, italic, underline, etc.)</li>
+                  <li>Paragraph alignment and indentation</li>
+                  <li>Font size and family selection</li>
+                  <li>Bulleted and numbered lists</li>
+                  <li>Find and replace functionality</li>
+                  <li>Word count and document statistics</li>
+                  <li>Page setup options</li>
+                  <li>Insert images, links, and tables</li>
+                </ul>
+
+                <p>
+                  Start typing to create your document. Use the toolbar above to
+                  format your text.
+                </p>
+
+                <p>
+                  <strong>Tip:</strong> Press Ctrl+S to save your document at
+                  any time.
+                </p>
+              </div>
+            </div>
+
+            <div class="status-bar">
+              <div class="page-setup">
+                <label>Page Size:</label>
+                <select id="pageSize">
+                  <option value="letter">Letter (8.5" x 11")</option>
+                  <option value="a4" selected>A4 (210mm x 297mm)</option>
+                  <option value="legal">Legal (8.5" x 14")</option>
+                </select>
+                <label>Margins:</label>
+                <input
+                  type="number"
+                  id="marginSize"
+                  value="1"
+                  min="0.1"
+                  step="0.1"
+                />
+                inches
+              </div>
+              <div>
+                Words: <span id="wordCount">0</span> | Characters:
+                <span id="charCount">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Find & Replace Panel -->
+    <div class="find-replace" id="findReplacePanel">
+      <h3>
+        Find & Replace
+        <button class="close-btn" id="closeFindReplace">&times;</button>
+      </h3>
+      <input type="text" id="findInput" placeholder="Find" />
+      <input type="text" id="replaceInput" placeholder="Replace with" />
+      <div class="find-replace-buttons">
+        <button class="btn-secondary" id="findPrevBtn">Previous</button>
+        <button class="btn-secondary" id="findNextBtn">Next</button>
+        <button class="btn-primary" id="replaceAllBtn">Replace All</button>
+      </div>
+    </div>
+
+    <!-- Word Count Modal -->
+    <div class="modal" id="wordCountModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Document Statistics</h2>
+          <button class="close-btn" id="closeWordCount">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Pages:</strong> <span id="pagesCount">1</span></p>
+          <p><strong>Words:</strong> <span id="modalWordCount">0</span></p>
+          <p>
+            <strong>Characters (no spaces):</strong>
+            <span id="charsNoSpacesCount">0</span>
+          </p>
+          <p>
+            <strong>Characters (with spaces):</strong>
+            <span id="charsWithSpacesCount">0</span>
+          </p>
+          <p>
+            <strong>Paragraphs:</strong> <span id="paragraphsCount">0</span>
+          </p>
+          <p><strong>Lines:</strong> <span id="linesCount">0</span></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="closeWordCountBtn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insert Link Modal -->
+    <div class="modal" id="insertLinkModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Insert Link</h2>
+          <button class="close-btn" id="closeLinkModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <label for="linkText">Text to display</label>
+          <input type="text" id="linkText" placeholder="Link text" />
+          <label for="linkUrl">URL</label>
+          <input type="url" id="linkUrl" placeholder="https://example.com" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancelLinkBtn">Cancel</button>
+          <button class="btn-primary" id="insertLinkConfirmBtn">Insert</button>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".docx" style="display: none" />
+
+    <script>
+      // DOM Elements
+      const editor = document.getElementById("editor");
+      const fileInput = document.getElementById("fileInput");
+      const findReplacePanel = document.getElementById("findReplacePanel");
+      const wordCountModal = document.getElementById("wordCountModal");
+      const insertLinkModal = document.getElementById("insertLinkModal");
+
+      // Toolbar buttons
+      const newBtn = document.getElementById("newBtn");
+      const openBtn = document.getElementById("openBtn");
+      const saveBtn = document.getElementById("saveBtn");
+      const printBtn = document.getElementById("printBtn");
+      const undoBtn = document.getElementById("undoBtn");
+      const redoBtn = document.getElementById("redoBtn");
+      const boldBtn = document.getElementById("boldBtn");
+      const italicBtn = document.getElementById("italicBtn");
+      const underlineBtn = document.getElementById("underlineBtn");
+      const strikethroughBtn = document.getElementById("strikethroughBtn");
+      const alignLeftBtn = document.getElementById("alignLeftBtn");
+      const alignCenterBtn = document.getElementById("alignCenterBtn");
+      const alignRightBtn = document.getElementById("alignRightBtn");
+      const justifyBtn = document.getElementById("justifyBtn");
+      const fontSizeSelect = document.getElementById("fontSize");
+      const fontFamilySelect = document.getElementById("fontFamily");
+      const insertLinkBtn = document.getElementById("insertLinkBtn");
+      const insertImageBtn = document.getElementById("insertImageBtn");
+      const insertTableBtn = document.getElementById("insertTableBtn");
+      const bulletListBtn = document.getElementById("bulletListBtn");
+      const numberedListBtn = document.getElementById("numberedListBtn");
+      const indentBtn = document.getElementById("indentBtn");
+      const outdentBtn = document.getElementById("outdentBtn");
+      const findReplaceBtn = document.getElementById("findReplaceBtn");
+      const wordCountBtn = document.getElementById("wordCountBtn");
+
+      // Status bar elements
+      const wordCountElement = document.getElementById("wordCount");
+      const charCountElement = document.getElementById("charCount");
+      const pageSizeSelect = document.getElementById("pageSize");
+      const marginSizeInput = document.getElementById("marginSize");
+
+      // Find & Replace elements
+      const findInput = document.getElementById("findInput");
+      const replaceInput = document.getElementById("replaceInput");
+      const findPrevBtn = document.getElementById("findPrevBtn");
+      const findNextBtn = document.getElementById("findNextBtn");
+      const replaceAllBtn = document.getElementById("replaceAllBtn");
+      const closeFindReplace = document.getElementById("closeFindReplace");
+
+      // Word Count Modal elements
+      const closeWordCount = document.getElementById("closeWordCount");
+      const closeWordCountBtn = document.getElementById("closeWordCountBtn");
+      const pagesCount = document.getElementById("pagesCount");
+      const modalWordCount = document.getElementById("modalWordCount");
+      const charsNoSpacesCount = document.getElementById("charsNoSpacesCount");
+      const charsWithSpacesCount = document.getElementById(
+        "charsWithSpacesCount"
+      );
+      const paragraphsCount = document.getElementById("paragraphsCount");
+      const linesCount = document.getElementById("linesCount");
+
+      // Insert Link Modal elements
+      const linkText = document.getElementById("linkText");
+      const linkUrl = document.getElementById("linkUrl");
+      const cancelLinkBtn = document.getElementById("cancelLinkBtn");
+      const insertLinkConfirmBtn = document.getElementById(
+        "insertLinkConfirmBtn"
+      );
+      const closeLinkModal = document.getElementById("closeLinkModal");
+
+      // State variables
+      let currentDoc = null;
+      let currentZip = null;
+      let findIndex = 0;
+      let findResults = [];
+
+      // Initialize editor
+      document.addEventListener("DOMContentLoaded", () => {
+        updateWordCount();
+      });
+
+      // Event Listeners
+      newBtn.addEventListener("click", newDocument);
+      openBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", handleFileSelect);
+      saveBtn.addEventListener("click", saveDocument);
+      printBtn.addEventListener("click", printDocument);
+      undoBtn.addEventListener("click", () =>
+        document.execCommand("undo", false, null)
+      );
+      redoBtn.addEventListener("click", () =>
+        document.execCommand("redo", false, null)
+      );
+      boldBtn.addEventListener("click", () => toggleFormat("bold"));
+      italicBtn.addEventListener("click", () => toggleFormat("italic"));
+      underlineBtn.addEventListener("click", () => toggleFormat("underline"));
+      strikethroughBtn.addEventListener("click", () =>
+        toggleFormat("strikethrough")
+      );
+      alignLeftBtn.addEventListener("click", () => setAlignment("left"));
+      alignCenterBtn.addEventListener("click", () => setAlignment("center"));
+      alignRightBtn.addEventListener("click", () => setAlignment("right"));
+      justifyBtn.addEventListener("click", () => setAlignment("justify"));
+      fontSizeSelect.addEventListener("change", changeFontSize);
+      fontFamilySelect.addEventListener("change", changeFontFamily);
+      insertLinkBtn.addEventListener("click", showInsertLinkModal);
+      insertImageBtn.addEventListener("click", insertImage);
+      insertTableBtn.addEventListener("click", insertTable);
+      bulletListBtn.addEventListener("click", () =>
+        document.execCommand("insertUnorderedList", false, null)
+      );
+      numberedListBtn.addEventListener("click", () =>
+        document.execCommand("insertOrderedList", false, null)
+      );
+      indentBtn.addEventListener("click", () =>
+        document.execCommand("indent", false, null)
+      );
+      outdentBtn.addEventListener("click", () =>
+        document.execCommand("outdent", false, null)
+      );
+      findReplaceBtn.addEventListener("click", toggleFindReplace);
+      wordCountBtn.addEventListener("click", showWordCount);
+      editor.addEventListener("input", updateWordCount);
+      editor.addEventListener("keyup", updateWordCount);
+      editor.addEventListener("mouseup", updateWordCount);
+
+      // Find & Replace events
+      findPrevBtn.addEventListener("click", findPrevious);
+      findNextBtn.addEventListener("click", findNext);
+      replaceAllBtn.addEventListener("click", replaceAll);
+      closeFindReplace.addEventListener("click", () =>
+        findReplacePanel.classList.remove("active")
+      );
+
+      // Word Count Modal events
+      closeWordCount.addEventListener("click", () =>
+        wordCountModal.classList.remove("active")
+      );
+      closeWordCountBtn.addEventListener("click", () =>
+        wordCountModal.classList.remove("active")
+      );
+
+      // Insert Link Modal events
+      cancelLinkBtn.addEventListener("click", () =>
+        insertLinkModal.classList.remove("active")
+      );
+      closeLinkModal.addEventListener("click", () =>
+        insertLinkModal.classList.remove("active")
+      );
+      insertLinkConfirmBtn.addEventListener("click", insertLink);
+
+      // Page setup events
+      pageSizeSelect.addEventListener("change", updatePageSetup);
+      marginSizeInput.addEventListener("change", updatePageSetup);
+
+      // Functions
+      function newDocument() {
+        if (
+          confirm(
+            "Are you sure you want to start a new document? Unsaved changes will be lost."
+          )
+        ) {
+          editor.innerHTML = "<p><br></p>";
+          updateWordCount();
+        }
+      }
+
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = e.target.result;
+          loadDocument(data);
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      function loadDocument(data) {
+        try {
+          const zip = new JSZip();
+          zip
+            .loadAsync(data)
+            .then(function (zipContent) {
+              currentZip = zipContent;
+              return zipContent.file("word/document.xml").async("text");
+            })
+            .then(function (text) {
+              // Simple parsing - in a real implementation, you'd parse the XML properly
+              // For this demo, we'll just extract text content
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(text, "text/xml");
+              const paragraphs = xmlDoc.getElementsByTagName("w:t");
+
+              let content = "";
+              for (let i = 0; i < paragraphs.length; i++) {
+                content += paragraphs[i].textContent + "\n";
+              }
+
+              editor.innerHTML = content.replace(/\n/g, "<br>");
+              updateWordCount();
+            });
+        } catch (error) {
+          alert("Error loading document: " + error.message);
+        }
+      }
+
+      function saveDocument() {
+        if (!currentZip) {
+          // Create a simple text file if no DOCX was loaded
+          const content = editor.innerText;
+          const blob = new Blob([content], {
+            type: "text/plain;charset=utf-8",
+          });
+          saveAs(blob, "document.txt");
+          return;
+        }
+
+        // In a real implementation, you would modify the document.xml with the new content
+        // For this demo, we'll just create a simple text file
+        const content = editor.innerText;
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        saveAs(blob, "edited-document.txt");
+      }
+
+      function printDocument() {
+        window.print();
+      }
+
+      function toggleFormat(command) {
+        document.execCommand(command, false, null);
+        updateButtonState();
+      }
+
+      function setAlignment(alignment) {
+        document.execCommand(
+          "justify" + alignment.charAt(0).toUpperCase() + alignment.slice(1),
+          false,
+          null
+        );
+        updateButtonState();
+      }
+
+      function changeFontSize() {
+        const size = fontSizeSelect.value;
+        document.execCommand("fontSize", false, "7"); // Use a placeholder
+
+        // Find the font elements and set the correct size
+        const fontElements = editor.querySelectorAll('font[size="7"]');
+        fontElements.forEach((el) => {
+          el.removeAttribute("size");
+          el.style.fontSize = size + "pt";
+        });
+      }
+
+      function changeFontFamily() {
+        const fontFamily = fontFamilySelect.value;
+        document.execCommand("fontName", false, fontFamily);
+      }
+
+      function showInsertLinkModal() {
+        const selection = window.getSelection();
+        if (selection.toString().length > 0) {
+          linkText.value = selection.toString();
+        } else {
+          linkText.value = "";
+        }
+        linkUrl.value = "";
+        insertLinkModal.classList.add("active");
+      }
+
+      function insertLink() {
+        const text = linkText.value || linkUrl.value;
+        const url = linkUrl.value;
+
+        if (!url) {
+          alert("Please enter a URL");
+          return;
+        }
+
+        document.execCommand("createLink", false, url);
+        insertLinkModal.classList.remove("active");
+      }
+
+      function insertImage() {
+        const url = prompt("Enter image URL:");
+        if (url) {
+          document.execCommand("insertImage", false, url);
+        }
+      }
+
+      function insertTable() {
+        const rows = prompt("Enter number of rows:", "3");
+        const cols = prompt("Enter number of columns:", "3");
+
+        if (rows && cols) {
+          let tableHTML =
+            '<table border="1" style="border-collapse: collapse; width: 100%;">';
+          for (let i = 0; i < rows; i++) {
+            tableHTML += "<tr>";
+            for (let j = 0; j < cols; j++) {
+              tableHTML +=
+                '<td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>';
+            }
+            tableHTML += "</tr>";
+          }
+          tableHTML += "</table>";
+
+          document.execCommand("insertHTML", false, tableHTML);
+        }
+      }
+
+      function toggleFindReplace() {
+        findReplacePanel.classList.toggle("active");
+        if (findReplacePanel.classList.contains("active")) {
+          findInput.focus();
+        }
+      }
+
+      function findPrevious() {
+        // In a real implementation, you would highlight the previous match
+        alert("Finding previous match for: " + findInput.value);
+      }
+
+      function findNext() {
+        // In a real implementation, you would highlight the next match
+        alert("Finding next match for: " + findInput.value);
+      }
+
+      function replaceAll() {
+        // In a real implementation, you would replace all matches
+        alert(
+          'Replacing all instances of "' +
+            findInput.value +
+            '" with "' +
+            replaceInput.value +
+            '"'
+        );
+      }
+
+      function showWordCount() {
+        updateWordCount(true);
+        wordCountModal.classList.add("active");
+      }
+
+      function updateWordCount(updateModal = false) {
+        const text = editor.innerText || "";
+        const words = text
+          .trim()
+          .split(/\s+/)
+          .filter((word) => word.length > 0);
+        const charsNoSpaces = text.replace(/\s/g, "").length;
+        const charsWithSpaces = text.length;
+        const paragraphs = text
+          .split(/\n+/)
+          .filter((p) => p.trim().length > 0).length;
+        const lines = text.split(/\n/).length;
+
+        // Update status bar
+        wordCountElement.textContent = words.length;
+        charCountElement.textContent = charsWithSpaces;
+
+        // Update modal if requested
+        if (updateModal) {
+          modalWordCount.textContent = words.length;
+          charsNoSpacesCount.textContent = charsNoSpaces;
+          charsWithSpacesCount.textContent = charsWithSpaces;
+          paragraphsCount.textContent = paragraphs;
+          linesCount.textContent = lines;
+          pagesCount.textContent = Math.ceil(lines / 25); // Approximation
+        }
+      }
+
+      function updatePageSetup() {
+        // In a real implementation, you would update the page layout
+        console.log("Page size:", pageSizeSelect.value);
+        console.log("Margin size:", marginSizeInput.value);
+      }
+
+      function updateButtonState() {
+        // Update button active states based on current selection
+        // This is a simplified implementation
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        const parentElement = range.commonAncestorContainer.parentElement;
+
+        // Update alignment buttons
+        alignLeftBtn.classList.toggle(
+          "active",
+          parentElement.style.textAlign === "left"
+        );
+        alignCenterBtn.classList.toggle(
+          "active",
+          parentElement.style.textAlign === "center"
+        );
+        alignRightBtn.classList.toggle(
+          "active",
+          parentElement.style.textAlign === "right"
+        );
+        justifyBtn.classList.toggle(
+          "active",
+          parentElement.style.textAlign === "justify"
+        );
+      }
+
+      // Initialize page setup
+      updatePageSetup();
+    </script>
+  </body>
+</html>
