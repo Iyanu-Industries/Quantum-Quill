@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-
+import "../../../app/application/editor/styles.css";
 interface ToolbarProps {
   setIsJournalsModalOpen: (isOpen: boolean) => void;
   setIsPlagiarismModalOpen: (isOpen: boolean) => void;
@@ -31,7 +31,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
     // Initialize the toolbar with Quill options
     const toolbarContainer = document.getElementById("toolbar");
     if (toolbarContainer && toolbarOptions) {
-      // Clear existing content
       toolbarContainer.innerHTML = "";
 
       // Create toolbar groups

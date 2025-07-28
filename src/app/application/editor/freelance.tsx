@@ -1,59 +1,7 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial, OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
-import * as random from 'maath/random/dist/maath-random.esm';
+import React, { useState, useEffect } from 'react';
 import { Code, Shield, Zap, Globe, Users, MessageSquare, Github, Twitter, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-// Floating particles component for 3D background
-function Particles(props) {
-  const ref = useRef();
-  const [sphere] = useState(() => random.inSphere(new Float32Array(2000), { radius: 1.5 }));
-
-  useFrame((state, delta) => {
-    ref.current.rotation.x -= delta / 10;
-    ref.current.rotation.y -= delta / 15;
-  });
-
-  return (
-    <group rotation={[0, 0, Math.PI / 4]}>
-      <Points ref={ref} positions={sphere} stride={3} frustumCulled={false} {...props}>
-        <PointMaterial
-          transparent
-          color="#8b5cf6"
-          size={0.005}
-          sizeAttenuation={true}
-          depthWrite={false}
-        />
-      </Points>
-    </group>
-  );
-}
-
-// Floating sphere component
-function FloatingSphere() {
-  const meshRef = useRef();
-
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    meshRef.current.position.y = Math.sin(time) * 0.1;
-    meshRef.current.rotation.x = time * 0.2;
-    meshRef.current.rotation.y = time * 0.3;
-  });
-
-  return (
-    <Sphere ref={meshRef} args={[1, 100, 200]} scale={0.8}>
-      <MeshDistortMaterial
-        color="#6366f1"
-        attach="material"
-        distort={0.3}
-        speed={2}
-        roughness={0.4}
-      />
-    </Sphere>
-  );
-}
 
 const App = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -258,21 +206,15 @@ const App = () => {
         )}
       </nav>
 
-      {/* Hero Section with 3D Background */}
+      {/* Hero Section */}
       <section id="home" className="pt-16 min-h-screen flex items-center relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Canvas camera={{ position: [0, 0, 1] }}>
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <Particles />
-            <FloatingSphere />
-            <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
-          </Canvas>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-purple-900/20"></div>
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
         </div>
         
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/40 to-purple-900/40 z-10"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
