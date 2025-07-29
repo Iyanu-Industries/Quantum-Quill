@@ -6,7 +6,7 @@ import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import * as Mammoth from "mammoth";
-
+import Docxtemplater from "docxtemplater";
 // Define TypeScript interfaces
 interface DocumentStats {
   words: number;
@@ -135,80 +135,676 @@ const DocumentEditor: React.FC = () => {
     };
     reader.readAsArrayBuffer(file); // This ensures result is ArrayBuffer
   };
+  // In your DocumentEditor component, update the loadDocument function:
 
-  // Install: npm install mammoth @types/mammoth
+  interface LoadDocumentOptions {
+    styleMap?: string[];
+    includeDefaultStyleMap?: boolean;
+  }
 
-  // Replace the loadDocument function with:
-  const loadDocument = async (data: ArrayBuffer) => {
+  interface MammothResult {
+    value: string;
+    messages: Array<{ type: string; message: string }>;
+  }
+
+  const loadDocument = async (
+    data: ArrayBuffer,
+    options?: LoadDocumentOptions
+  ): Promise<void> => {
     try {
-      const result = await Mammoth.convertToHtml({ arrayBuffer: data });
+      // Enhanced Mammoth configuration for comprehensive style preservation
+      const result: MammothResult = await Mammoth.convertToHtml(
+        { arrayBuffer: data },
+        {
+          styleMap: [
+            // Preserve paragraph styles with formatting
+            "p => p:fresh",
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Heading 4'] => h4:fresh",
+            "p[style-name='Heading 5'] => h5:fresh",
+            "p[style-name='Heading 6'] => h6:fresh",
+            "p[style-name='Title'] => h1.title:fresh",
+            "p[style-name='Subtitle'] => h2.subtitle:fresh",
+
+            // Table preservation with full styling
+            "table => table:fresh",
+            "tr => tr:fresh",
+            "td => td:fresh",
+            "th => th:fresh",
+            "thead => thead:fresh",
+            "tbody => tbody:fresh",
+            "tfoot => tfoot:fresh",
+
+            // List styles with Roman numerals and symbols
+            "ul => ul:fresh",
+            "ol => ol:fresh",
+            "li => li:fresh",
+
+            // Text formatting
+            "r[style-name='Strong'] => strong:fresh",
+            "r[style-name='Emphasis'] => em:fresh",
+            "r[style-name='Underline'] => u:fresh",
+
+            // Additional formatting elements
+            "div => div:fresh",
+            "span => span:fresh",
+            "blockquote => blockquote:fresh",
+            "pre => pre:fresh",
+            "code => code:fresh",
+
+            // Image and media preservation
+            "img => img:fresh",
+            "figure => figure:fresh",
+            "figcaption => figcaption:fresh",
+
+            // Custom styles - preserve all Word styles
+            ...(options?.styleMap || []),
+          ],
+          includeDefaultStyleMap: options?.includeDefaultStyleMap ?? true,
+
+          // Enhanced options for better preservation
+          convertImage: Mammoth.images.imgElement((image) => {
+            return image.read("base64").then((imageBuffer) => {
+              return {
+                src: `data:${image.contentType};base64,${imageBuffer}`,
+                style: "max-width: 100%; height: auto;",
+              };
+            });
+          }),
+
+          // Preserve more document structure
+          ignoreEmptyParagraphs: false,
+
+          // Transform functions for better style preservation
+          transformDocument: (document) => {
+            // Additional document-level transformations if needed
+            return document;
+          },
+        }
+      );
+
       if (editorRef.current) {
         editorRef.current.innerHTML = result.value;
+
+        // Enhanced style preservation post-processing
+        const elements: NodeListOf<HTMLElement> =
+          editorRef.current.querySelectorAll("*");
+
+        elements.forEach((element: HTMLElement) => {
+          // Preserve line height from original document
+          if (
+            !element.style.lineHeight &&
+            element.getAttribute("data-line-height")
+          ) {
+            element.style.lineHeight =
+              element.getAttribute("data-line-height") || "1.6";
+          } else if (!element.style.lineHeight) {
+            // Set contextual line heights based on element type
+            switch (element.tagName.toLowerCase()) {
+              case "h1":
+              case "h2":
+              case "h3":
+              case "h4":
+              case "h5":
+              case "h6":
+                element.style.lineHeight = "1.2";
+                break;
+              case "p":
+                element.style.lineHeight = "1.6";
+                break;
+              case "li":
+                element.style.lineHeight = "1.5";
+                break;
+              default:
+                element.style.lineHeight = "1.4";
+            }
+          }
+
+          // Preserve table styles
+          if (element.tagName.toLowerCase() === "table") {
+            element.style.borderCollapse =
+              element.style.borderCollapse || "collapse";
+            element.style.width = element.style.width || "auto";
+            element.style.margin = element.style.margin || "1em 0";
+          }
+
+          if (["td", "th"].includes(element.tagName.toLowerCase())) {
+            element.style.padding = element.style.padding || "8px 12px";
+            element.style.border = element.style.border || "1px solid #ddd";
+            element.style.verticalAlign = element.style.verticalAlign || "top";
+          }
+
+          // Enhanced list style preservation
+          if (element.tagName.toLowerCase() === "ol") {
+            // Detect and preserve Roman numeral lists
+            const listStyleType =
+              element.style.listStyleType ||
+              element.getAttribute("data-list-style") ||
+              "decimal";
+
+            // Map common Word list styles
+            const wordListStyles = {
+              "upper-roman": "upper-roman",
+              "lower-roman": "lower-roman",
+              "upper-alpha": "upper-alpha",
+              "lower-alpha": "lower-alpha",
+              decimal: "decimal",
+            };
+
+            element.style.listStyleType =
+              wordListStyles[listStyleType as keyof typeof wordListStyles] ||
+              listStyleType;
+            element.style.paddingLeft = element.style.paddingLeft || "2em";
+          }
+
+          if (element.tagName.toLowerCase() === "ul") {
+            // Preserve bullet styles (disc, circle, square, etc.)
+            const listStyleType =
+              element.style.listStyleType ||
+              element.getAttribute("data-list-style") ||
+              "disc";
+
+            const bulletStyles = {
+              disc: "disc",
+              circle: "circle",
+              square: "square",
+              none: "none",
+            };
+
+            element.style.listStyleType =
+              bulletStyles[listStyleType as keyof typeof bulletStyles] ||
+              listStyleType;
+            element.style.paddingLeft = element.style.paddingLeft || "2em";
+          }
+
+          // Preserve text alignment
+          if (element.getAttribute("data-text-align")) {
+            element.style.textAlign =
+              element.getAttribute("data-text-align") || "left";
+          }
+
+          // Preserve margins and spacing
+          if (element.getAttribute("data-margin-top")) {
+            element.style.marginTop =
+              element.getAttribute("data-margin-top") || "0";
+          }
+          if (element.getAttribute("data-margin-bottom")) {
+            element.style.marginBottom =
+              element.getAttribute("data-margin-bottom") || "0";
+          }
+
+          // Preserve font styles
+          if (element.getAttribute("data-font-family")) {
+            element.style.fontFamily =
+              element.getAttribute("data-font-family") || "inherit";
+          }
+          if (element.getAttribute("data-font-size")) {
+            element.style.fontSize =
+              element.getAttribute("data-font-size") || "inherit";
+          }
+          if (element.getAttribute("data-font-weight")) {
+            element.style.fontWeight =
+              element.getAttribute("data-font-weight") || "normal";
+          }
+
+          // Preserve colors
+          if (element.getAttribute("data-color")) {
+            element.style.color =
+              element.getAttribute("data-color") || "inherit";
+          }
+          if (element.getAttribute("data-background-color")) {
+            element.style.backgroundColor =
+              element.getAttribute("data-background-color") || "transparent";
+          }
+
+          // Preserve indentation
+          if (element.getAttribute("data-indent")) {
+            element.style.marginLeft =
+              element.getAttribute("data-indent") || "0";
+          }
+        });
+
+        // Enhanced CSS rules for better Word document compatibility
+        const style = document.createElement("style");
+        style.textContent = `
+        /* PRESERVE Word document table styles - minimal override */
+        #editor table {
+          border-collapse: collapse !important;
+          margin: 1em 0;
+          font-family: inherit;
+        }
+        
+        /* Only add borders if Word document doesn't have them */
+        #editor table:not([style*="border"]) {
+          border: 1px solid #000;
+        }
+        
+        #editor th:not([style*="border"]), 
+        #editor td:not([style*="border"]) {
+          border: 1px solid #000;
+        }
+        
+        /* Preserve Word document cell styling */
+        #editor th, #editor td {
+          text-align: left;
+          vertical-align: top;
+          padding: 4px 8px;
+        }
+        
+        /* Enhanced list styles that don't override Word formatting */
+        #editor ol[data-list-style="upper-roman"] {
+          list-style-type: upper-roman;
+        }
+        
+        #editor ol[data-list-style="lower-roman"] {
+          list-style-type: lower-roman;
+        }
+        
+        #editor ol[data-list-style="upper-alpha"] {
+          list-style-type: upper-alpha;
+        }
+        
+        #editor ol[data-list-style="lower-alpha"] {
+          list-style-type: lower-alpha;
+        }
+        
+        #editor ul[data-list-style="disc"] {
+          list-style-type: disc;
+        }
+        
+        #editor ul[data-list-style="circle"] {
+          list-style-type: circle;
+        }
+        
+        #editor ul[data-list-style="square"] {
+          list-style-type: square;
+        }
+        
+        /* Preserve Word spacing and formatting */
+        #editor p {
+          margin: 0 0 1em 0;
+        }
+        
+        /* Heading styles similar to Word */
+        #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6 {
+          margin: 1.2em 0 0.6em 0;
+          line-height: 1.2;
+        }
+        
+        /* List spacing that doesn't interfere with Word styles */
+        #editor ul, #editor ol {
+          margin: 1em 0;
+          padding-left: 2em;
+        }
+        
+        #editor li {
+          margin: 0.5em 0;
+        }
+        
+        /* Preserve image styling from Word */
+        #editor img {
+          max-width: 100%;
+          height: auto;
+          display: block;
+          margin: 1em 0;
+        }
+        
+        /* Preserve bold text formatting */
+        #editor strong, #editor b {
+          font-weight: bold;
+        }
+        
+        /* Preserve italic text formatting */
+        #editor em, #editor i {
+          font-style: italic;
+        }
+        
+        /* Preserve underline formatting */
+        #editor u {
+          text-decoration: underline;
+        }
+      `;
+
+        document.head.appendChild(style);
       }
+
       updateWordCount();
+
+      // Log conversion messages for debugging
+      if (result.messages && result.messages.length > 0) {
+        console.log("Document conversion messages:", result.messages);
+      }
     } catch (error) {
       console.error("Error loading document:", error);
       alert("Error loading document: " + (error as Error).message);
     }
   };
+  // const loadDocument = async (data: ArrayBuffer) => {
+  //   try {
+  //     // Configure Mammoth to preserve more styling
+  //     const result = await Mammoth.convertToHtml(
+  //       { arrayBuffer: data },
+  //       {
+  //         styleMap: [
+  //           "p[style-name='Heading 1'] => h1:fresh",
+  //           "p[style-name='Heading 2'] => h2:fresh",
+  //           "p[style-name='Heading 3'] => h3:fresh",
+  //           "r[style-name='Strong'] => strong",
+  //           "r[style-name='Emphasis'] => em",
+  //           "p[style-name='ListParagraph'] => li",
+  //           "p[style-name='ListNumber'] => li",
+  //           // Add more style mappings as needed
+  //         ],
+  //       }
+  //     );
+
+  //     if (editorRef.current) {
+  //       editorRef.current.innerHTML = result.value;
+
+  //       // Apply additional styling to preserve list and table appearance
+  //       const lists = editorRef.current.querySelectorAll("ul, ol");
+  //       lists.forEach((list) => {
+  //         (list as HTMLElement).style.paddingLeft = "40px";
+  //         (list as HTMLElement).style.margin = "10px 0";
+  //       });
+
+  //       const listItems = editorRef.current.querySelectorAll("li");
+  //       listItems.forEach((item) => {
+  //         (item as HTMLElement).style.margin = "5px 0";
+  //       });
+
+  //       const tables = editorRef.current.querySelectorAll("table");
+  //       tables.forEach((table) => {
+  //         (table as HTMLElement).style.borderCollapse = "collapse";
+  //         (table as HTMLElement).style.width = "100%";
+  //         (table as HTMLElement).style.margin = "10px 0";
+  //       });
+
+  //       const tableCells = editorRef.current.querySelectorAll("td, th");
+  //       tableCells.forEach((cell) => {
+  //         (cell as HTMLElement).style.border = "1px solid #000";
+  //         (cell as HTMLElement).style.padding = "8px";
+  //         (cell as HTMLElement).style.textAlign = "left";
+  //       });
+  //     }
+  //     updateWordCount();
+  //   } catch (error) {
+  //     console.error("Error loading document:", error);
+  //     alert("Error loading document: " + (error as Error).message);
+  //   }
+  // };
 
   const saveDocument = async () => {
-    if (!documentState.currentZip) {
-      // Create a simple text file if no DOCX was loaded
-      const content = editorRef.current?.innerText || "";
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      saveAs(blob, "document.txt");
-      return;
-    }
-
     try {
-      // Load the template with docxtemplater
-      const zip = new JSZip();
-      const content = await zip.loadAsync(documentState.currentDoc!);
+      // Get content from editor
+      const editorHtmlContent = editorRef.current?.innerHTML || "";
+      const editorTextContent = editorRef.current?.innerText || "";
 
-      // Extract text content from editor
-      const editorContent = editorRef.current?.innerText || "";
+      // Create a new DOCX document from scratch using docxtemplater
+      // We'll create a minimal valid DOCX structure
 
-      // For this example, we'll create a simple DOCX with the content
-      // In a real implementation, you'd use docxtemplater properly
-      const newZip = new JSZip();
+      // Create document.xml content
+      const convertHtmlToWordML = (html: string) => {
+        // This is a simplified conversion - in a real implementation,
+        // you would want a more robust HTML to WordML converter
+        let wordML = html;
 
-      // Copy all files from the original zip except document.xml
-      for (const [key, value] of Object.entries(content.files)) {
-        if (key !== "word/document.xml") {
-          const fileData = await value.async("blob");
-          newZip.file(key, fileData);
-        }
-      }
+        // Basic conversions for common elements
+        wordML = wordML.replace(
+          /<p[^>]*>/g,
+          '</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
+        );
+        wordML = wordML.replace(/<\/p>/g, "</w:t></w:r></w:p>");
 
-      // Create a new document.xml with the content
-      const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    <w:p>
-      <w:r>
-        <w:t>${editorContent
+        // Handle line breaks
+        wordML = wordML.replace(
+          /<br\s*\/?>/g,
+          '</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
+        );
+
+        // Handle bold
+        wordML = wordML.replace(
+          /<(strong|b)[^>]*>(.*?)<\/(strong|b)>/g,
+          '</w:t></w:r></w:p><w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">$2</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
+        );
+
+        // Handle italics
+        wordML = wordML.replace(
+          /<(em|i)[^>]*>(.*?)<\/(em|i)>/g,
+          '</w:t></w:r></w:p><w:p><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve">$2</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
+        );
+
+        // Remove remaining HTML tags
+        wordML = wordML.replace(/<[^>]*>/g, "");
+
+        // Escape XML characters
+        wordML = wordML
           .replace(/&/g, "&amp;")
           .replace(/</g, "<")
-          .replace(/>/g, ">")}</w:t>
-      </w:r>
-    </w:p>
+          .replace(/>/g, ">")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&apos;");
+
+        // Wrap in paragraph tags
+        return `<w:p><w:r><w:t xml:space="preserve">${wordML}</w:t></w:r></w:p>`;
+      };
+
+      // Create a basic DOCX structure
+      const createBasicDocx = async () => {
+        // Create a new JSZip instance
+        const zip = new JSZip();
+
+        // Add required DOCX files
+        // [Content_Types].xml
+        zip.file(
+          "[Content_Types].xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+  <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
+  <Override PartName="/word/webSettings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml"/>
+  <Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"/>
+  <Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`
+        );
+
+        // _rels/.rels
+        zip.folder("_rels")?.file(
+          ".rels",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`
+        );
+
+        // docProps/app.xml
+        zip.folder("docProps")?.file(
+          "app.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+  <Application>Document Editor</Application>
+</Properties>`
+        );
+
+        // docProps/core.xml
+        zip.folder("docProps")?.file(
+          "core.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:title>Document</dc:title>
+  <dc:creator>Document Editor</dc:creator>
+  <cp:lastModifiedBy>Document Editor</cp:lastModifiedBy>
+  <cp:revision>1</cp:revision>
+</cp:coreProperties>`
+        );
+
+        // word folder
+        const wordFolder = zip.folder("word");
+
+        // word/_rels/document.xml.rels
+        wordFolder?.folder("_rels")?.file(
+          "document.xml.rels",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+</Relationships>`
+        );
+
+        // word/document.xml
+        const wordMLContent = convertHtmlToWordML(editorHtmlContent);
+        wordFolder?.file(
+          "document.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${wordMLContent}
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
   </w:body>
-</w:document>`;
+</w:document>`
+        );
 
-      newZip.file("word/document.xml", documentXml);
+        // word/styles.xml
+        wordFolder?.file(
+          "styles.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults>
+    <w:rPrDefault>
+      <w:rPr>
+        <w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Times New Roman"/>
+      </w:rPr>
+    </w:rPrDefault>
+    <w:pPrDefault/>
+  </w:docDefaults>
+  <w:style w:type="paragraph" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:spacing w:after="120" w:line="240" w:lineRule="auto"/>
+    </w:pPr>
+    <w:rPr>
+      <w:sz w:val="20"/>
+      <w:szCs w:val="20"/>
+    </w:rPr>
+  </w:style>
+</w:styles>`
+        );
 
-      // Generate the new DOCX file
-      const blob = await newZip.generateAsync({ type: "blob" });
-      saveAs(blob, "edited-document.docx");
+        // word/settings.xml
+        wordFolder?.file(
+          "settings.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:defaultTabStop w:val="720"/>
+  <w:characterSpacingControl w:val="doNotCompress"/>
+</w:settings>`
+        );
+
+        // word/webSettings.xml
+        wordFolder?.file(
+          "webSettings.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:webSettings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+</w:webSettings>`
+        );
+
+        // word/fontTable.xml
+        wordFolder?.file(
+          "fontTable.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:font w:name="Calibri">
+    <w:panose1 w:val="020F0502020204030204"/>
+  </w:font>
+  <w:font w:name="Times New Roman">
+    <w:panose1 w:val="02020603050405020304"/>
+  </w:font>
+</w:fonts>`
+        );
+
+        // word/theme/theme1.xml
+        wordFolder?.file(
+          "theme/theme1.xml",
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+  <a:themeElements>
+    <a:clrScheme name="Office">
+      <a:dk1><a:srgbClr val="000000"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="1F497D"/></a:dk2>
+      <a:lt2><a:srgbClr val="EEECE1"/></a:lt2>
+      <a:accent1><a:srgbClr val="4F81BD"/></a:accent1>
+      <a:accent2><a:srgbClr val="C0504D"/></a:accent2>
+      <a:accent3><a:srgbClr val="9BBB59"/></a:accent3>
+      <a:accent4><a:srgbClr val="8064A2"/></a:accent4>
+      <a:accent5><a:srgbClr val="4BACC6"/></a:accent5>
+      <a:accent6><a:srgbClr val="F79646"/></a:accent6>
+      <a:hlink><a:srgbClr val="0000FF"/></a:hlink>
+      <a:folHlink><a:srgbClr val="800080"/></a:folHlink>
+    </a:clrScheme>
+    <a:fontScheme name="Office">
+      <a:majorFont>
+        <a:latin typeface="Calibri"/>
+        <a:ea typeface=""/>
+        <a:cs typeface=""/>
+      </a:majorFont>
+      <a:minorFont>
+        <a:latin typeface="Calibri"/>
+        <a:ea typeface=""/>
+        <a:cs typeface=""/>
+      </a:minorFont>
+    </a:fontScheme>
+    <a:fmtScheme name="Office">
+      <a:fillStyleLst>
+        <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+      </a:fillStyleLst>
+      <a:lnStyleLst>
+        <a:ln w="9525" cap="flat" cmpd="sng" algn="ctr">
+          <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+          <a:prstDash val="solid"/>
+        </a:ln>
+      </a:lnStyleLst>
+      <a:effectStyleLst>
+        <a:effectStyle/>
+      </a:effectStyleLst>
+      <a:bgFillStyleLst>
+        <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+      </a:bgFillStyleLst>
+    </a:fmtScheme>
+  </a:themeElements>
+</a:theme>`
+        );
+
+        // Generate the DOCX file
+        const blob = await zip.generateAsync({
+          type: "blob",
+          mimeType:
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+
+        return blob;
+      };
+
+      // Create and save the DOCX file
+      const blob = await createBasicDocx();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      saveAs(blob, `document-${timestamp}.docx`);
+
+      console.log("Document saved successfully as DOCX!");
     } catch (error) {
       console.error("Error saving document:", error);
-      alert("Error saving document. Saving as text instead.");
-
-      // Fallback to text save
-      const content = editorRef.current?.innerText || "";
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      saveAs(blob, "document.txt");
+      alert(`Error saving document: ${(error as Error).message}`);
     }
   };
 

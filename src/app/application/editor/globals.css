@@ -191,6 +191,7 @@ select {
   outline: none;
   font-size: 16px;
   line-height: 1.6;
+  text-align: left;
 }
 
 .status-bar {
@@ -365,46 +366,57 @@ select {
   }
 }
 
-#editor {
-  width: 100%;
-  min-height: 100%;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 40px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  outline: none;
-  font-size: 16px;
-  line-height: 1.6;
-  /* Add these to ensure proper content styling */
-  text-align: left;
-}
+/* REMOVED CONFLICTING TABLE STYLES - Let Word document styles take precedence */
 
-/* Ensure list and table styles are applied within the editor */
+/* Keep only essential list styles that don't conflict with Word formatting */
 #editor ul,
 #editor ol {
   padding-left: 40px;
   margin: 10px 0;
 }
 
+#editor ul {
+  list-style-type: disc;
+  list-style-position: outside; /* Changed from inside to outside for better Word compatibility */
+}
+
+#editor ol {
+  list-style-type: decimal;
+  list-style-position: outside; /* Changed from inside to outside for better Word compatibility */
+}
+
 #editor li {
   margin: 5px 0;
+  /* REMOVED text-indent which was conflicting with Word formatting */
 }
 
-#editor table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 10px 0;
+/* Nested lists */
+#editor ul ul,
+#editor ol ol {
+  margin-left: 20px;
 }
 
-#editor table td,
-#editor table th {
-  border: 1px solid #000;
-  padding: 8px;
-  text-align: left;
+#editor ol ol {
+  list-style-type: lower-alpha;
 }
 
-#editor table th {
-  background-color: #f0f0f0;
-  font-weight: bold;
+#editor ul ul {
+  list-style-type: circle;
+}
+
+/* Roman numeral lists - preserve Word document formatting */
+#editor ol[type="i"] {
+  list-style-type: lower-roman;
+}
+
+#editor ol[type="I"] {
+  list-style-type: upper-roman;
+}
+
+#editor ol[type="A"] {
+  list-style-type: upper-alpha;
+}
+
+#editor ol[type="a"] {
+  list-style-type: lower-alpha;
 }
