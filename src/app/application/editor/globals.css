@@ -31,13 +31,13 @@ body {
   margin-top: 20px;
 }
 
-header {
+/* header {
   background: linear-gradient(to right, #4b6cb7, #182848);
   color: white;
   padding: 20px;
   text-align: center;
   position: relative;
-}
+} */
 
 h1 {
   font-size: 2.2rem;
@@ -149,6 +149,16 @@ select {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+[contenteditable] {
+  min-height: 100px;
+  overflow: auto;
+}
+
+[contenteditable] span {
+  display: inline;
+  line-height: inherit;
 }
 
 .document-item:hover {
