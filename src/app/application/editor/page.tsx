@@ -1,13 +1,458 @@
-// components/DocumentEditor.tsx
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef } from "react";
-import { saveAs } from "file-saver";
-import JSZip from "jszip";
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import * as Mammoth from "mammoth";
-import Docxtemplater from "docxtemplater";
-// Define TypeScript interfaces
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, Upload, Printer, Search, FileText, Settings, Eye, EyeOff, Menu, X, MessageSquare, Copy, Check, Shield, BookOpen, Zap } from 'lucide-react';
+
+
+export function LoadingAnimation() {
+  return (
+    <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+      <div className="text-center">
+        <div className="relative mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center animate-pulse">
+            <i className="ri-quill-pen-line text-white text-2xl"></i>
+          </div>
+          <div className="absolute -inset-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-20 animate-ping"></div>
+        </div>
+        
+        <h2 className="text-2xl font-bold text-white mb-4 font-pacifico">Quantum Quill</h2>
+        
+        <div className="flex items-center justify-center space-x-1 mb-4">
+          <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+          <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+          <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+        </div>
+        
+        <p className="text-gray-400 text-sm">Loading your writing workspace...</p>
+        
+        <div className="mt-6 w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+// Header Component
+const Header = () => (
+  <div className="bg-gray-900 border-b border-gray-800 px-6 py-4">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-4">
+        <h1 className="text-xl font-bold text-white">Document Editor</h1>
+        <span className="text-sm text-gray-400">Full-featured word processor</span>
+      </div>
+      <div className="flex items-center space-x-4">
+        <button className="text-gray-400 hover:text-white transition-colors">
+          <Settings size={20} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+interface SidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+export function Sidebar({ isOpen, onToggle }: SidebarProps) {
+  const templates = [
+    { name: 'Blank Document', icon: 'ri-file-text-line' },
+    { name: 'Research Paper', icon: 'ri-file-paper-line' },
+    { name: 'Essay Template', icon: 'ri-article-line' },
+    { name: 'Report Template', icon: 'ri-file-chart-line' },
+    { name: 'Letter Template', icon: 'ri-mail-line' },
+  ];
+
+  const recentDocs = [
+    { name: 'Research Paper Draft', date: '2 hours ago', icon: 'ri-file-text-line' },
+    { name: 'Project Proposal', date: '1 day ago', icon: 'ri-file-paper-line' },
+    { name: 'Meeting Notes', date: '3 days ago', icon: 'ri-sticky-note-line' },
+    { name: 'Annual Report', date: '1 week ago', icon: 'ri-file-chart-line' },
+  ];
+
+  if (!isOpen) {
+    return (
+      <div className="w-12 bg-gray-900 border-r border-gray-800 flex flex-col items-center py-4">
+        <button
+          onClick={onToggle}
+          className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer"
+        >
+          <i className="ri-menu-line text-gray-300"></i>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+      <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+        <h2 className="font-bold text-white">Documents</h2>
+        <button
+          onClick={onToggle}
+          className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors cursor-pointer"
+        >
+          <i className="ri-close-line text-gray-300"></i>
+        </button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4">
+          <h3 className="text-sm font-semibold text-gray-400 mb-3">Templates</h3>
+          <div className="space-y-2">
+            {templates.map((template, index) => (
+              <button
+                key={index}
+                className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer text-left"
+              >
+                <i className={`${template.icon} text-purple-400`}></i>
+                <span className="text-sm text-gray-300">{template.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="p-4 border-t border-gray-800">
+          <h3 className="text-sm font-semibold text-gray-400 mb-3">Recent Documents</h3>
+          <div className="space-y-2">
+            {recentDocs.map((doc, index) => (
+              <button
+                key={index}
+                className="w-full flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer text-left"
+              >
+                <i className={`${doc.icon} text-blue-400`}></i>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-gray-300 truncate">{doc.name}</div>
+                  <div className="text-xs text-gray-500">{doc.date}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface PageSetup {
+  pageSize: string;
+  marginSize: number;
+  fontSize: string;
+  fontFamily: string;
+}
+interface ToolbarProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  zoomLevel: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onCitationManager: () => void;
+  onPlagiarismCheck: () => void;
+  onGrammarCheck: () => void;
+  onNewDocument: () => void;
+  onOpenDocument: () => void;
+  onSaveDocument: () => void;
+  onPrintDocument: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onBold: () => void;
+  onItalic: () => void;
+  onUnderline: () => void;
+  onStrikethrough: () => void;
+  onAlignLeft: () => void;
+  onAlignCenter: () => void;
+  onAlignRight: () => void;
+  onAlignJustify: () => void;
+  onInsertLink: () => void;
+  onInsertImage: () => void;
+  onInsertTable: (rows: number, cols: number) => void;
+  onBulletList: () => void;
+  onNumberList: () => void;
+  onIndent: () => void;
+  onOutdent: () => void;
+  onFindReplace: () => void;
+  onWordCount: () => void;
+  pageSetup: PageSetup;
+  onPageSetupChange: (property: keyof PageSetup, value: string | number) => void;
+}
+
+// Enhanced Toolbar Component
+const Toolbar: React.FC<ToolbarProps> = ({ 
+  activeTab, 
+  onTabChange, 
+  zoomLevel, 
+  onZoomIn, 
+  onZoomOut, 
+  onCitationManager, 
+  onPlagiarismCheck, 
+  onGrammarCheck,
+  onNewDocument,
+  onOpenDocument,
+  onSaveDocument,
+  onPrintDocument,
+  onUndo,
+  onRedo,
+  onBold,
+  onItalic,
+  onUnderline,
+  onStrikethrough,
+  onAlignLeft,
+  onAlignCenter,
+  onAlignRight,
+  onAlignJustify,
+  onInsertLink,
+  onInsertImage,
+  onInsertTable,
+  onBulletList,
+  onNumberList,
+  onIndent,
+  onOutdent,
+  onFindReplace,
+  onWordCount,
+  pageSetup,
+  onPageSetupChange
+}) => {
+  const tabs = ['Format', 'Insert', 'Tools', 'View'];
+  const [isTableDropdownOpen, setIsTableDropdownOpen] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
+
+  const handleTableInsert = () => {
+    onInsertTable(tableRows, tableCols);
+    setIsTableDropdownOpen(false);
+  };
+
+  const renderTableDropdown = () => (
+    <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded shadow-lg z-10 p-4 min-w-[200px]">
+      <div className="text-xs text-gray-300 mb-3">Insert Table:</div>
+      
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Rows:</label>
+          <input
+            type="number"
+            min="1"
+            max="20"
+            value={tableRows}
+            onChange={(e) => setTableRows(parseInt(e.target.value) || 1)}
+            className="w-full bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Columns:</label>
+          <input
+            type="number"
+            min="1"
+            max="20"
+            value={tableCols}
+            onChange={(e) => setTableCols(parseInt(e.target.value) || 1)}
+            className="w-full bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm"
+          />
+        </div>
+        
+        <button
+          onClick={handleTableInsert}
+          className="w-full px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors"
+        >
+          Insert Table
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderFormatTools = () => (
+    <div className="flex items-center space-x-2">
+      <button onClick={onNewDocument} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors" title="New">
+        📄
+      </button>
+      <button onClick={onOpenDocument} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors" title="Open">
+        📂
+      </button>
+      <button onClick={onSaveDocument} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors" title="Save">
+        💾
+      </button>
+      <button onClick={onPrintDocument} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors" title="Print">
+        🖨️
+      </button>
+      
+      <div className="w-px h-6 bg-gray-600 mx-2"></div>
+      
+      <button onClick={onUndo} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors" title="Undo">
+        ↶
+      </button>
+      <button onClick={onRedo} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors" title="Redo">
+        ↷
+      </button>
+      
+      <div className="w-px h-6 bg-gray-600 mx-2"></div>
+      
+      <button onClick={onBold} className="px-3 py-1 bg-purple-600 text-white rounded text-sm font-bold hover:bg-purple-700 transition-colors" title="Bold">
+        Bold
+      </button>
+      <button onClick={onItalic} className="px-3 py-1 bg-gray-700 text-white rounded text-sm italic hover:bg-gray-600 transition-colors" title="Italic">
+        Italic
+      </button>
+      <button onClick={onUnderline} className="px-3 py-1 bg-gray-700 text-white rounded text-sm underline hover:bg-gray-600 transition-colors" title="Underline">
+        Underline
+      </button>
+      <button onClick={onStrikethrough} className="px-3 py-1 bg-gray-700 text-white rounded text-sm line-through hover:bg-gray-600 transition-colors" title="Strikethrough">
+        Strike
+      </button>
+      
+      <div className="w-px h-6 bg-gray-600 mx-2"></div>
+      
+      <select
+        value={pageSetup.fontFamily}
+        onChange={(e) => onPageSetupChange('fontFamily', e.target.value)}
+        className="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm pr-8 cursor-pointer"
+      >
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Times New Roman', serif">Times New Roman</option>
+        <option value="Helvetica, sans-serif">Helvetica</option>
+        <option value="Verdana, sans-serif">Verdana</option>
+        <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="Impact, sans-serif">Impact</option>
+        <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+      </select>
+      
+      <select
+        value={pageSetup.fontSize}
+        onChange={(e) => onPageSetupChange('fontSize', e.target.value)}
+        className="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm pr-8 cursor-pointer"
+      >
+        <option value="8">8px</option>
+        <option value="10">10px</option>
+        <option value="12">12px</option>
+        <option value="14">14px</option>
+        <option value="16">16px</option>
+        <option value="18">18px</option>
+        <option value="24">24px</option>
+        <option value="36">36px</option>
+        <option value="48">48px</option>
+      </select>
+      
+      <div className="w-px h-6 bg-gray-600 mx-2"></div>
+      
+      <button onClick={onAlignLeft} className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-purple-600 transition-colors" title="Align Left">
+        ⬅
+      </button>
+      <button onClick={onAlignCenter} className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-purple-600 transition-colors" title="Center">
+        ↔
+      </button>
+      <button onClick={onAlignRight} className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-purple-600 transition-colors" title="Align Right">
+        ➡
+      </button>
+      <button onClick={onAlignJustify} className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-purple-600 transition-colors" title="Justify">
+        ⬌
+      </button>
+      
+      <div className="w-px h-6 bg-gray-600 mx-2"></div>
+      
+      <button onClick={onBulletList} className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-purple-600 transition-colors" title="Bullet List">
+        •
+      </button>
+      <button onClick={onNumberList} className="px-2 py-1 bg-gray-700 text-white rounded hover:bg-purple-600 transition-colors" title="Number List">
+        1.
+      </button>
+    </div>
+  );
+
+  const renderInsertTools = () => (
+    <div className="flex items-center space-x-2">
+      <button onClick={onInsertImage} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        🖼️ Image
+      </button>
+      <div className="relative">
+        <button 
+          onClick={() => setIsTableDropdownOpen(!isTableDropdownOpen)}
+          className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors"
+        >
+          📊 Table
+        </button>
+        {isTableDropdownOpen && renderTableDropdown()}
+      </div>
+      <button onClick={onInsertLink} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        🔗 Link
+      </button>
+      <button onClick={onCitationManager} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        📖 Citation
+      </button>
+    </div>
+  );
+
+  const renderToolsTools = () => (
+    <div className="flex items-center space-x-2">
+      <button onClick={onGrammarCheck} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        ✓ Grammar Check
+      </button>
+      <button onClick={onPlagiarismCheck} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        🛡️ Plagiarism Detector
+      </button>
+      <button onClick={onCitationManager} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        📚 Citation Manager
+      </button>
+      <button className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors">
+        🤖 AI Chatbot
+      </button>
+    </div>
+  );
+
+  const renderViewTools = () => (
+    <div className="flex items-center space-x-2">
+      <button onClick={onZoomIn} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        🔍+ Zoom In
+      </button>
+      <button onClick={onZoomOut} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        🔍- Zoom Out
+      </button>
+      <span className="px-3 py-1 bg-gray-800 text-white rounded text-sm">
+        {zoomLevel}%
+      </span>
+      <button className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        📺 Full Screen
+      </button>
+      <button onClick={onWordCount} className="px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-purple-600 transition-colors">
+        📊 Word Count
+      </button>
+    </div>
+  );
+
+  const renderTools = () => {
+    switch (activeTab) {
+      case 'Format': return renderFormatTools();
+      case 'Insert': return renderInsertTools();
+      case 'Tools': return renderToolsTools();
+      case 'View': return renderViewTools();
+      default: return renderFormatTools();
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 border-b border-gray-800">
+      <div className="flex items-center space-x-1 px-4 py-2 border-b border-gray-800">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => onTabChange(tab)}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+              activeTab === tab
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-300 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      
+      <div className="px-4 py-3">
+        {renderTools()}
+      </div>
+    </div>
+  );
+};
 interface DocumentStats {
   words: number;
   characters: number;
@@ -17,55 +462,402 @@ interface DocumentStats {
   paragraphs: number;
   lines: number;
 }
-
-interface FindReplaceState {
-  active: boolean;
-  findInput: string;
-  replaceInput: string;
+// Enhanced Editor Component
+interface EditorProps {
+  zoomLevel: number;
+  isSidebarOpen: boolean;
+  isChatOpen: boolean;
+  pageSetup: PageSetup;
+  stats: DocumentStats;
+  onStatsUpdate: (stats: DocumentStats) => void;
 }
-
-interface ModalState {
-  wordCount: boolean;
-  insertLink: boolean;
-}
-
-interface PageSetup {
-  pageSize: string;
-  marginSize: number;
-  fontSize: string;
-  fontFamily: string;
-}
-
-interface DocumentState {
-  currentDoc: File | null;
-  currentZip: JSZip | null;
-}
-
-const DocumentEditor: React.FC = () => {
-  // Refs
+const Editor: React.FC<EditorProps> = ({ zoomLevel, isSidebarOpen, isChatOpen, pageSetup, stats, onStatsUpdate }) => {
+  // Fix: Type the ref as HTMLDivElement
   const editorRef = useRef<HTMLDivElement>(null);
+  const [editorWidth, setEditorWidth] = useState('max-w-4xl');
+
+  useEffect(() => {
+    if (isSidebarOpen && isChatOpen) {
+      setEditorWidth('max-w-2xl');
+    } else if (isSidebarOpen || isChatOpen) {
+      setEditorWidth('max-w-3xl');
+    } else {
+      setEditorWidth('max-w-4xl');
+    }
+  }, [isSidebarOpen, isChatOpen]);
+
+  useEffect(() => {
+    if (editorRef.current && !editorRef.current.innerHTML.trim()) {
+      editorRef.current.innerHTML = '<p>Start typing your document here...</p>';
+    }
+  }, []);
+
+  const handleEditorInput = () => {
+    if (!editorRef.current) return;
+    
+    const text = editorRef.current.innerText || '';
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    const charsNoSpaces = text.replace(/\s/g, '').length;
+    const charsWithSpaces = text.length;
+    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0).length;
+    const lines = text.split(/\n/).length;
+
+    const newStats = {
+      words: words.length,
+      characters: charsWithSpaces,
+      pages: Math.ceil(lines / 25),
+      charsNoSpaces,
+      charsWithSpaces,
+      paragraphs,
+      lines,
+    };
+
+    onStatsUpdate(newStats);
+  };
+
+  const fontSize = Math.round(16 * (zoomLevel / 100));
+
+  return (
+    <div className="flex-1 flex flex-col bg-gray-100">
+      <div className="flex-1 p-8 overflow-y-auto">
+        <div 
+          className={`${editorWidth} mx-auto bg-white rounded-lg shadow-lg min-h-[800px] p-8 transition-all duration-300`}
+          style={{ 
+            transform: `scale(${zoomLevel / 100})`,
+            transformOrigin: 'top center'
+          }}
+        >
+          <div
+            ref={editorRef}
+            contentEditable="true"
+            onInput={handleEditorInput}
+            onKeyUp={handleEditorInput}
+            onMouseUp={handleEditorInput}
+            className="w-full h-full min-h-[700px] border-none outline-none resize-none text-gray-800 leading-relaxed font-normal transition-all duration-200"
+            style={{ 
+              fontFamily: pageSetup.fontFamily,
+              fontSize: `${fontSize}px`,
+              lineHeight: 1.6
+            }}
+            suppressContentEditableWarning={true}
+          />
+        </div>
+      </div>
+      
+      <div className="bg-gray-900 border-t border-gray-800 px-8 py-2 flex items-center justify-between text-sm text-gray-400">
+        <div className="flex items-center space-x-6">
+          <span>Word Count: {stats.words}</span>
+          <span>Character Count: {stats.characters}</span>
+          <span>Zoom: {zoomLevel}%</span>
+        </div>
+        <div className="flex items-center space-x-4">
+          <span>Page Size: {pageSetup.pageSize.toUpperCase()}</span>
+          <button className="hover:text-white transition-colors">
+            ⚙️
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+interface Citation {
+  style: string;
+  text: string;
+}interface PlagiarismData {
+  score: number;
+  issues: Array<{
+    source: string;
+    text: string;
+  }>;
+}
+
+interface GrammarData {
+  type: 'error' | 'suggestion';
+  category: string;
+  text: string;
+  suggestion: string;
+}
+interface ChatSidebarProps {
+  isOpen: boolean;
+  onToggle: () => void;
+  citationsData: Citation[];
+  plagiarismData: PlagiarismData | null;
+  grammarData: GrammarData[];
+}
+
+// Chat Sidebar Component
+const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onToggle, citationsData, plagiarismData, grammarData }) => (
+  <div className={`${isOpen ? 'w-80' : 'w-0'} bg-gray-900 border-l border-gray-800 transition-all duration-300 overflow-hidden`}>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-white">Analysis</h2>
+        <button onClick={onToggle} className="text-gray-400 hover:text-white">
+          <X size={18} />
+        </button>
+      </div>
+      
+      {citationsData.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-300 mb-2">Citations</h3>
+          <div className="space-y-2">
+            {citationsData.map((citation, idx) => (
+              <div key={idx} className="p-3 bg-gray-800 rounded text-sm">
+                <div className="text-purple-400 font-medium">{citation.style}</div>
+                <div className="text-gray-300 mt-1">{citation.text}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {plagiarismData && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-300 mb-2">Plagiarism Check</h3>
+          <div className="p-3 bg-gray-800 rounded">
+            <div className="text-lg font-bold text-green-400">{plagiarismData.score}% Original</div>
+            <div className="space-y-2 mt-2">
+              {plagiarismData.issues.map((issue, idx) => (
+                <div key={idx} className="text-sm">
+                  <div className="text-red-400">{issue.source}</div>
+                  <div className="text-gray-300">{issue.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {grammarData.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-300 mb-2">Grammar Check</h3>
+          <div className="space-y-2">
+            {grammarData.map((item, idx) => (
+              <div key={idx} className="p-3 bg-gray-800 rounded text-sm">
+                <div className={`font-medium ${item.type === 'error' ? 'text-red-400' : 'text-yellow-400'}`}>
+                  {item.category}
+                </div>
+                <div className="text-gray-300 mt-1">{item.text}</div>
+                <div className="text-green-400 mt-1 text-xs">{item.suggestion}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Modal Components
+interface WordCountModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  stats: DocumentStats;
+}
+
+interface FindReplaceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  findText: string;
+  replaceText: string;
+  onFindChange: (text: string) => void;
+  onReplaceChange: (text: string) => void;
+  onFindNext: () => void;
+  onReplaceAll: () => void;
+}
+
+interface InsertLinkModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  linkText: string;
+  linkUrl: string;
+  onLinkTextChange: (text: string) => void;
+  onLinkUrlChange: (url: string) => void;
+  onInsert: () => void;
+}
+
+const WordCountModal: React.FC<WordCountModalProps> = ({ isOpen, onClose, stats }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-96">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Document Statistics</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="space-y-3 text-gray-300">
+          <div className="flex justify-between">
+            <span>Pages:</span>
+            <span className="text-white">{stats.pages}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Words:</span>
+            <span className="text-white">{stats.words}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Characters (no spaces):</span>
+            <span className="text-white">{stats.charsNoSpaces}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Characters (with spaces):</span>
+            <span className="text-white">{stats.charsWithSpaces}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Paragraphs:</span>
+            <span className="text-white">{stats.paragraphs}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Lines:</span>
+            <span className="text-white">{stats.lines}</span>
+          </div>
+        </div>
+        <div className="mt-6">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+const FindReplaceModal: React.FC<FindReplaceModalProps> = ({ isOpen, onClose, findText, replaceText, onFindChange, onReplaceChange, onFindNext, onReplaceAll }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-96">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Find & Replace</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <input
+            type="text"
+            value={findText}
+            onChange={(e) => onFindChange(e.target.value)}
+            placeholder="Find"
+            className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded"
+          />
+          <input
+            type="text"
+            value={replaceText}
+            onChange={(e) => onReplaceChange(e.target.value)}
+            placeholder="Replace with"
+            className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded"
+          />
+          <div className="flex space-x-2">
+            <button
+              onClick={onFindNext}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+            >
+              Find Next
+            </button>
+            <button
+              onClick={onReplaceAll}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+            >
+              Replace All
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const InsertLinkModal: React.FC<InsertLinkModalProps> = ({ isOpen, onClose, linkText, linkUrl, onLinkTextChange, onLinkUrlChange, onInsert }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-96">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Insert Link</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-gray-300 mb-1">Text to display</label>
+            <input
+              type="text"
+              value={linkText}
+              onChange={(e) => onLinkTextChange(e.target.value)}
+              placeholder="Link text"
+              className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-300 mb-1">URL</label>
+            <input
+              type="url"
+              value={linkUrl}
+              onChange={(e) => onLinkUrlChange(e.target.value)}
+              placeholder="https://example.com"
+              className="w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded"
+            />
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onInsert}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+            >
+              Insert
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+export default function DocumentEditor() {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<string>('Format');
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
+
+  // File handling
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentDoc, setCurrentDoc] = useState<File | null>(null);
 
-  // State variables with types
-  const [findReplace, setFindReplace] = useState<FindReplaceState>({
-    active: false,
-    findInput: "",
-    replaceInput: "",
-  });
+  // Modal states
+  const [showWordCount, setShowWordCount] = useState<boolean>(false);
+  const [showFindReplace, setShowFindReplace] = useState<boolean>(false);
+  const [showInsertLink, setShowInsertLink] = useState<boolean>(false);
 
-  const [modals, setModals] = useState<ModalState>({
-    wordCount: false,
-    insertLink: false,
-  });
+  // Find & Replace states
+  const [findText, setFindText] = useState<string>('');
+  const [replaceText, setReplaceText] = useState<string>('');
 
-  const [documentState, setDocumentState] = useState<DocumentState>({
-    currentDoc: null,
-    currentZip: null,
-  });
+  // Link insertion states
+  const [linkText, setLinkText] = useState<string>('');
+  const [linkUrl, setLinkUrl] = useState<string>('');
 
-  const [findIndex, setFindIndex] = useState<number>(0);
-  const [findResults, setFindResults] = useState<Array<Range>>([]);
+  // Data states for summaries
+  const [citationsData, setCitationsData] = useState<Citation[]>([]);
+  const [plagiarismData, setPlagiarismData] = useState<PlagiarismData | null>(null);
+  const [grammarData, setGrammarData] = useState<GrammarData[]>([]);
 
+  // Document stats
   const [stats, setStats] = useState<DocumentStats>({
     words: 0,
     characters: 0,
@@ -76,56 +868,44 @@ const DocumentEditor: React.FC = () => {
     lines: 0,
   });
 
-  const [pageSetup, setPageSetup] = useState<PageSetup>({
-    pageSize: "a4",
+    const [pageSetup, setPageSetup] = useState<PageSetup>({
+    pageSize: 'a4',
     marginSize: 1,
-    fontSize: "12",
+    fontSize: '12',
     fontFamily: "'Times New Roman', serif",
   });
 
-  // Initialize editor
+  // Refs for editor functionality
+  const editorRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    updateWordCount();
+    // Simulate loading time
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
 
-    // Dynamically load Font Awesome
-    const loadFontAwesome = () => {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href =
-        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
-      document.head.appendChild(link);
-    };
-
-    if (typeof window !== "undefined") {
-      loadFontAwesome();
-    }
+    return () => clearTimeout(timer);
   }, []);
 
-  // Update word count whenever editor content changes
-  const handleEditorInput = () => {
-    updateWordCount();
-  };
-
-  // Core editor functions
-  const newDocument = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to start a new document? Unsaved changes will be lost."
-      )
-    ) {
+  // Document operations
+  const handleNewDocument = (): void => {
+    if (window.confirm('Are you sure you want to start a new document? Unsaved changes will be lost.')) {
       if (editorRef.current) {
-        editorRef.current.innerHTML = "<p><br></p>";
+        editorRef.current.innerHTML = '<p>Start typing your document here...</p>';
       }
       updateWordCount();
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOpenDocument = (): void => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setDocumentState((prev) => ({ ...prev, currentDoc: file }));
-
+    setCurrentDoc(file);
     const reader = new FileReader();
     reader.onload = function (e) {
       const result = e.target?.result;
@@ -133,1185 +913,320 @@ const DocumentEditor: React.FC = () => {
         loadDocument(result);
       }
     };
-    reader.readAsArrayBuffer(file); // This ensures result is ArrayBuffer
+    reader.readAsArrayBuffer(file);
   };
-  // In your DocumentEditor component, update the loadDocument function:
 
-  interface LoadDocumentOptions {
-    styleMap?: string[];
-    includeDefaultStyleMap?: boolean;
-  }
-
-  interface MammothResult {
-    value: string;
-    messages: Array<{ type: string; message: string }>;
-  }
-
-  const loadDocument = async (
-    data: ArrayBuffer,
-    options?: LoadDocumentOptions
-  ): Promise<void> => {
+  const loadDocument = async (data: ArrayBuffer): Promise<void> => {
     try {
-      // Enhanced Mammoth configuration for comprehensive style preservation
-      const result: MammothResult = await Mammoth.convertToHtml(
-        { arrayBuffer: data },
-        {
-          styleMap: [
-            // Preserve paragraph styles with formatting
-            "p => p:fresh",
-            "p[style-name='Heading 1'] => h1:fresh",
-            "p[style-name='Heading 2'] => h2:fresh",
-            "p[style-name='Heading 3'] => h3:fresh",
-            "p[style-name='Heading 4'] => h4:fresh",
-            "p[style-name='Heading 5'] => h5:fresh",
-            "p[style-name='Heading 6'] => h6:fresh",
-            "p[style-name='Title'] => h1.title:fresh",
-            "p[style-name='Subtitle'] => h2.subtitle:fresh",
-
-            // Table preservation with full styling
-            "table => table:fresh",
-            "tr => tr:fresh",
-            "td => td:fresh",
-            "th => th:fresh",
-            "thead => thead:fresh",
-            "tbody => tbody:fresh",
-            "tfoot => tfoot:fresh",
-
-            // List styles with Roman numerals and symbols
-            "ul => ul:fresh",
-            "ol => ol:fresh",
-            "li => li:fresh",
-
-            // Text formatting
-            "r[style-name='Strong'] => strong:fresh",
-            "r[style-name='Emphasis'] => em:fresh",
-            "r[style-name='Underline'] => u:fresh",
-
-            // Additional formatting elements
-            "div => div:fresh",
-            "span => span:fresh",
-            "blockquote => blockquote:fresh",
-            "pre => pre:fresh",
-            "code => code:fresh",
-
-            // Image and media preservation
-            "img => img:fresh",
-            "figure => figure:fresh",
-            "figcaption => figcaption:fresh",
-
-            // Custom styles - preserve all Word styles
-            ...(options?.styleMap || []),
-          ],
-          includeDefaultStyleMap: options?.includeDefaultStyleMap ?? true,
-
-          // Enhanced options for better preservation
-          convertImage: Mammoth.images.imgElement((image) => {
-            return image.read("base64").then((imageBuffer) => {
-              return {
-                src: `data:${image.contentType};base64,${imageBuffer}`,
-                style: "max-width: 100%; height: auto;",
-              };
-            });
-          }),
-
-          // Preserve more document structure
-          ignoreEmptyParagraphs: false,
-
-          // Transform functions for better style preservation
-          transformDocument: (document) => {
-            // Additional document-level transformations if needed
-            return document;
-          },
-        }
-      );
-
+      // Basic text loading - in production, you'd use mammoth.js for DOCX files
+      const text = new TextDecoder().decode(data);
       if (editorRef.current) {
-        editorRef.current.innerHTML = result.value;
-
-        // Enhanced style preservation post-processing
-        const elements: NodeListOf<HTMLElement> =
-          editorRef.current.querySelectorAll("*");
-
-        elements.forEach((element: HTMLElement) => {
-          // Preserve line height from original document
-          if (
-            !element.style.lineHeight &&
-            element.getAttribute("data-line-height")
-          ) {
-            element.style.lineHeight =
-              element.getAttribute("data-line-height") || "1.6";
-          } else if (!element.style.lineHeight) {
-            // Set contextual line heights based on element type
-            switch (element.tagName.toLowerCase()) {
-              case "h1":
-              case "h2":
-              case "h3":
-              case "h4":
-              case "h5":
-              case "h6":
-                element.style.lineHeight = "1.2";
-                break;
-              case "p":
-                element.style.lineHeight = "1.6";
-                break;
-              case "li":
-                element.style.lineHeight = "1.5";
-                break;
-              default:
-                element.style.lineHeight = "1.4";
-            }
-          }
-
-          // Preserve table styles
-          if (element.tagName.toLowerCase() === "table") {
-            element.style.borderCollapse =
-              element.style.borderCollapse || "collapse";
-            element.style.width = element.style.width || "auto";
-            element.style.margin = element.style.margin || "1em 0";
-          }
-
-          if (["td", "th"].includes(element.tagName.toLowerCase())) {
-            element.style.padding = element.style.padding || "8px 12px";
-            element.style.border = element.style.border || "1px solid #ddd";
-            element.style.verticalAlign = element.style.verticalAlign || "top";
-          }
-
-          // Enhanced list style preservation
-          if (element.tagName.toLowerCase() === "ol") {
-            // Detect and preserve Roman numeral lists
-            const listStyleType =
-              element.style.listStyleType ||
-              element.getAttribute("data-list-style") ||
-              "decimal";
-
-            // Map common Word list styles
-            const wordListStyles = {
-              "upper-roman": "upper-roman",
-              "lower-roman": "lower-roman",
-              "upper-alpha": "upper-alpha",
-              "lower-alpha": "lower-alpha",
-              decimal: "decimal",
-            };
-
-            element.style.listStyleType =
-              wordListStyles[listStyleType as keyof typeof wordListStyles] ||
-              listStyleType;
-            element.style.paddingLeft = element.style.paddingLeft || "2em";
-          }
-
-          if (element.tagName.toLowerCase() === "ul") {
-            // Preserve bullet styles (disc, circle, square, etc.)
-            const listStyleType =
-              element.style.listStyleType ||
-              element.getAttribute("data-list-style") ||
-              "disc";
-
-            const bulletStyles = {
-              disc: "disc",
-              circle: "circle",
-              square: "square",
-              none: "none",
-            };
-
-            element.style.listStyleType =
-              bulletStyles[listStyleType as keyof typeof bulletStyles] ||
-              listStyleType;
-            element.style.paddingLeft = element.style.paddingLeft || "2em";
-          }
-
-          // Preserve text alignment
-          if (element.getAttribute("data-text-align")) {
-            element.style.textAlign =
-              element.getAttribute("data-text-align") || "left";
-          }
-
-          // Preserve margins and spacing
-          if (element.getAttribute("data-margin-top")) {
-            element.style.marginTop =
-              element.getAttribute("data-margin-top") || "0";
-          }
-          if (element.getAttribute("data-margin-bottom")) {
-            element.style.marginBottom =
-              element.getAttribute("data-margin-bottom") || "0";
-          }
-
-          // Preserve font styles
-          if (element.getAttribute("data-font-family")) {
-            element.style.fontFamily =
-              element.getAttribute("data-font-family") || "inherit";
-          }
-          if (element.getAttribute("data-font-size")) {
-            element.style.fontSize =
-              element.getAttribute("data-font-size") || "inherit";
-          }
-          if (element.getAttribute("data-font-weight")) {
-            element.style.fontWeight =
-              element.getAttribute("data-font-weight") || "normal";
-          }
-
-          // Preserve colors
-          if (element.getAttribute("data-color")) {
-            element.style.color =
-              element.getAttribute("data-color") || "inherit";
-          }
-          if (element.getAttribute("data-background-color")) {
-            element.style.backgroundColor =
-              element.getAttribute("data-background-color") || "transparent";
-          }
-
-          // Preserve indentation
-          if (element.getAttribute("data-indent")) {
-            element.style.marginLeft =
-              element.getAttribute("data-indent") || "0";
-          }
-        });
-
-        // Enhanced CSS rules for better Word document compatibility
-        const style = document.createElement("style");
-        style.textContent = `
-        /* PRESERVE Word document table styles - minimal override */
-        #editor table {
-          border-collapse: collapse !important;
-          margin: 1em 0;
-          font-family: inherit;
-        }
-        
-        /* Only add borders if Word document doesn't have them */
-        #editor table:not([style*="border"]) {
-          border: 1px solid #000;
-        }
-        
-        #editor th:not([style*="border"]), 
-        #editor td:not([style*="border"]) {
-          border: 1px solid #000;
-        }
-        
-        /* Preserve Word document cell styling */
-        #editor th, #editor td {
-          text-align: left;
-          vertical-align: top;
-          padding: 4px 8px;
-        }
-        
-        /* Enhanced list styles that don't override Word formatting */
-        #editor ol[data-list-style="upper-roman"] {
-          list-style-type: upper-roman;
-        }
-        
-        #editor ol[data-list-style="lower-roman"] {
-          list-style-type: lower-roman;
-        }
-        
-        #editor ol[data-list-style="upper-alpha"] {
-          list-style-type: upper-alpha;
-        }
-        
-        #editor ol[data-list-style="lower-alpha"] {
-          list-style-type: lower-alpha;
-        }
-        
-        #editor ul[data-list-style="disc"] {
-          list-style-type: disc;
-        }
-        
-        #editor ul[data-list-style="circle"] {
-          list-style-type: circle;
-        }
-        
-        #editor ul[data-list-style="square"] {
-          list-style-type: square;
-        }
-        
-        /* Preserve Word spacing and formatting */
-        #editor p {
-          margin: 0 0 1em 0;
-        }
-        
-        /* Heading styles similar to Word */
-        #editor h1, #editor h2, #editor h3, #editor h4, #editor h5, #editor h6 {
-          margin: 1.2em 0 0.6em 0;
-          line-height: 1.2;
-        }
-        
-        /* List spacing that doesn't interfere with Word styles */
-        #editor ul, #editor ol {
-          margin: 1em 0;
-          padding-left: 2em;
-        }
-        
-        #editor li {
-          margin: 0.5em 0;
-        }
-        
-        /* Preserve image styling from Word */
-        #editor img {
-          max-width: 100%;
-          height: auto;
-          display: block;
-          margin: 1em 0;
-        }
-        
-        /* Preserve bold text formatting */
-        #editor strong, #editor b {
-          font-weight: bold;
-        }
-        
-        /* Preserve italic text formatting */
-        #editor em, #editor i {
-          font-style: italic;
-        }
-        
-        /* Preserve underline formatting */
-        #editor u {
-          text-decoration: underline;
-        }
-      `;
-
-        document.head.appendChild(style);
+        editorRef.current.innerHTML = `<p>${text}</p>`;
       }
-
       updateWordCount();
-
-      // Log conversion messages for debugging
-      if (result.messages && result.messages.length > 0) {
-        console.log("Document conversion messages:", result.messages);
-      }
     } catch (error) {
-      console.error("Error loading document:", error);
-      alert("Error loading document: " + (error as Error).message);
+      console.error('Error loading document:', error);
+      alert('Error loading document: ' + (error as Error).message);
     }
   };
-  // const loadDocument = async (data: ArrayBuffer) => {
-  //   try {
-  //     // Configure Mammoth to preserve more styling
-  //     const result = await Mammoth.convertToHtml(
-  //       { arrayBuffer: data },
-  //       {
-  //         styleMap: [
-  //           "p[style-name='Heading 1'] => h1:fresh",
-  //           "p[style-name='Heading 2'] => h2:fresh",
-  //           "p[style-name='Heading 3'] => h3:fresh",
-  //           "r[style-name='Strong'] => strong",
-  //           "r[style-name='Emphasis'] => em",
-  //           "p[style-name='ListParagraph'] => li",
-  //           "p[style-name='ListNumber'] => li",
-  //           // Add more style mappings as needed
-  //         ],
-  //       }
-  //     );
 
-  //     if (editorRef.current) {
-  //       editorRef.current.innerHTML = result.value;
-
-  //       // Apply additional styling to preserve list and table appearance
-  //       const lists = editorRef.current.querySelectorAll("ul, ol");
-  //       lists.forEach((list) => {
-  //         (list as HTMLElement).style.paddingLeft = "40px";
-  //         (list as HTMLElement).style.margin = "10px 0";
-  //       });
-
-  //       const listItems = editorRef.current.querySelectorAll("li");
-  //       listItems.forEach((item) => {
-  //         (item as HTMLElement).style.margin = "5px 0";
-  //       });
-
-  //       const tables = editorRef.current.querySelectorAll("table");
-  //       tables.forEach((table) => {
-  //         (table as HTMLElement).style.borderCollapse = "collapse";
-  //         (table as HTMLElement).style.width = "100%";
-  //         (table as HTMLElement).style.margin = "10px 0";
-  //       });
-
-  //       const tableCells = editorRef.current.querySelectorAll("td, th");
-  //       tableCells.forEach((cell) => {
-  //         (cell as HTMLElement).style.border = "1px solid #000";
-  //         (cell as HTMLElement).style.padding = "8px";
-  //         (cell as HTMLElement).style.textAlign = "left";
-  //       });
-  //     }
-  //     updateWordCount();
-  //   } catch (error) {
-  //     console.error("Error loading document:", error);
-  //     alert("Error loading document: " + (error as Error).message);
-  //   }
-  // };
-
-  const saveDocument = async () => {
+  const handleSaveDocument = (): void => {
     try {
-      // Get content from editor
-      const editorHtmlContent = editorRef.current?.innerHTML || "";
-      const editorTextContent = editorRef.current?.innerText || "";
-
-      // Create a new DOCX document from scratch using docxtemplater
-      // We'll create a minimal valid DOCX structure
-
-      // Create document.xml content
-      const convertHtmlToWordML = (html: string) => {
-        // This is a simplified conversion - in a real implementation,
-        // you would want a more robust HTML to WordML converter
-        let wordML = html;
-
-        // Basic conversions for common elements
-        wordML = wordML.replace(
-          /<p[^>]*>/g,
-          '</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
-        );
-        wordML = wordML.replace(/<\/p>/g, "</w:t></w:r></w:p>");
-
-        // Handle line breaks
-        wordML = wordML.replace(
-          /<br\s*\/?>/g,
-          '</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
-        );
-
-        // Handle bold
-        wordML = wordML.replace(
-          /<(strong|b)[^>]*>(.*?)<\/(strong|b)>/g,
-          '</w:t></w:r></w:p><w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">$2</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
-        );
-
-        // Handle italics
-        wordML = wordML.replace(
-          /<(em|i)[^>]*>(.*?)<\/(em|i)>/g,
-          '</w:t></w:r></w:p><w:p><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve">$2</w:t></w:r></w:p><w:p><w:r><w:t xml:space="preserve">'
-        );
-
-        // Remove remaining HTML tags
-        wordML = wordML.replace(/<[^>]*>/g, "");
-
-        // Escape XML characters
-        wordML = wordML
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "<")
-          .replace(/>/g, ">")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&apos;");
-
-        // Wrap in paragraph tags
-        return `<w:p><w:r><w:t xml:space="preserve">${wordML}</w:t></w:r></w:p>`;
-      };
-
-      // Create a basic DOCX structure
-      const createBasicDocx = async () => {
-        // Create a new JSZip instance
-        const zip = new JSZip();
-
-        // Add required DOCX files
-        // [Content_Types].xml
-        zip.file(
-          "[Content_Types].xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
-  <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
-  <Override PartName="/word/webSettings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml"/>
-  <Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"/>
-  <Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
-  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
-  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
-</Types>`
-        );
-
-        // _rels/.rels
-        zip.folder("_rels")?.file(
-          ".rels",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
-  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
-</Relationships>`
-        );
-
-        // docProps/app.xml
-        zip.folder("docProps")?.file(
-          "app.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
-  <Application>Document Editor</Application>
-</Properties>`
-        );
-
-        // docProps/core.xml
-        zip.folder("docProps")?.file(
-          "core.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
-  <dc:title>Document</dc:title>
-  <dc:creator>Document Editor</dc:creator>
-  <cp:lastModifiedBy>Document Editor</cp:lastModifiedBy>
-  <cp:revision>1</cp:revision>
-</cp:coreProperties>`
-        );
-
-        // word folder
-        const wordFolder = zip.folder("word");
-
-        // word/_rels/document.xml.rels
-        wordFolder?.folder("_rels")?.file(
-          "document.xml.rels",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-</Relationships>`
-        );
-
-        // word/document.xml
-        const wordMLContent = convertHtmlToWordML(editorHtmlContent);
-        wordFolder?.file(
-          "document.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    ${wordMLContent}
-    <w:sectPr>
-      <w:pgSz w:w="12240" w:h="15840"/>
-      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
-    </w:sectPr>
-  </w:body>
-</w:document>`
-        );
-
-        // word/styles.xml
-        wordFolder?.file(
-          "styles.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:docDefaults>
-    <w:rPrDefault>
-      <w:rPr>
-        <w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Times New Roman"/>
-      </w:rPr>
-    </w:rPrDefault>
-    <w:pPrDefault/>
-  </w:docDefaults>
-  <w:style w:type="paragraph" w:styleId="Normal">
-    <w:name w:val="Normal"/>
-    <w:qFormat/>
-    <w:pPr>
-      <w:spacing w:after="120" w:line="240" w:lineRule="auto"/>
-    </w:pPr>
-    <w:rPr>
-      <w:sz w:val="20"/>
-      <w:szCs w:val="20"/>
-    </w:rPr>
-  </w:style>
-</w:styles>`
-        );
-
-        // word/settings.xml
-        wordFolder?.file(
-          "settings.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:defaultTabStop w:val="720"/>
-  <w:characterSpacingControl w:val="doNotCompress"/>
-</w:settings>`
-        );
-
-        // word/webSettings.xml
-        wordFolder?.file(
-          "webSettings.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:webSettings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-</w:webSettings>`
-        );
-
-        // word/fontTable.xml
-        wordFolder?.file(
-          "fontTable.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:font w:name="Calibri">
-    <w:panose1 w:val="020F0502020204030204"/>
-  </w:font>
-  <w:font w:name="Times New Roman">
-    <w:panose1 w:val="02020603050405020304"/>
-  </w:font>
-</w:fonts>`
-        );
-
-        // word/theme/theme1.xml
-        wordFolder?.file(
-          "theme/theme1.xml",
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
-  <a:themeElements>
-    <a:clrScheme name="Office">
-      <a:dk1><a:srgbClr val="000000"/></a:dk1>
-      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
-      <a:dk2><a:srgbClr val="1F497D"/></a:dk2>
-      <a:lt2><a:srgbClr val="EEECE1"/></a:lt2>
-      <a:accent1><a:srgbClr val="4F81BD"/></a:accent1>
-      <a:accent2><a:srgbClr val="C0504D"/></a:accent2>
-      <a:accent3><a:srgbClr val="9BBB59"/></a:accent3>
-      <a:accent4><a:srgbClr val="8064A2"/></a:accent4>
-      <a:accent5><a:srgbClr val="4BACC6"/></a:accent5>
-      <a:accent6><a:srgbClr val="F79646"/></a:accent6>
-      <a:hlink><a:srgbClr val="0000FF"/></a:hlink>
-      <a:folHlink><a:srgbClr val="800080"/></a:folHlink>
-    </a:clrScheme>
-    <a:fontScheme name="Office">
-      <a:majorFont>
-        <a:latin typeface="Calibri"/>
-        <a:ea typeface=""/>
-        <a:cs typeface=""/>
-      </a:majorFont>
-      <a:minorFont>
-        <a:latin typeface="Calibri"/>
-        <a:ea typeface=""/>
-        <a:cs typeface=""/>
-      </a:minorFont>
-    </a:fontScheme>
-    <a:fmtScheme name="Office">
-      <a:fillStyleLst>
-        <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
-      </a:fillStyleLst>
-      <a:lnStyleLst>
-        <a:ln w="9525" cap="flat" cmpd="sng" algn="ctr">
-          <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
-          <a:prstDash val="solid"/>
-        </a:ln>
-      </a:lnStyleLst>
-      <a:effectStyleLst>
-        <a:effectStyle/>
-      </a:effectStyleLst>
-      <a:bgFillStyleLst>
-        <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
-      </a:bgFillStyleLst>
-    </a:fmtScheme>
-  </a:themeElements>
-</a:theme>`
-        );
-
-        // Generate the DOCX file
-        const blob = await zip.generateAsync({
-          type: "blob",
-          mimeType:
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        });
-
-        return blob;
-      };
-
-      // Create and save the DOCX file
-      const blob = await createBasicDocx();
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      saveAs(blob, `document-${timestamp}.docx`);
-
-      console.log("Document saved successfully as DOCX!");
+      const content = editorRef.current?.innerHTML || '';
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'document.html';
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error saving document:", error);
-      alert(`Error saving document: ${(error as Error).message}`);
+      console.error('Error saving document:', error);
+      alert('Error saving document: ' + (error as Error).message);
     }
   };
 
-  const printDocument = () => {
+  const handlePrintDocument = (): void => {
     window.print();
   };
 
-  const toggleFormat = (command: string) => {
-    document.execCommand(command, false, undefined);
-    updateButtonState();
+  // Formatting operations
+  const handleUndo = (): void => {
+    document.execCommand('undo', false);
   };
 
-  const setAlignment = (alignment: string) => {
-    document.execCommand(
-      "justify" + alignment.charAt(0).toUpperCase() + alignment.slice(1),
-      false,
-      undefined
-    );
-    updateButtonState();
+  const handleRedo = (): void => {
+    document.execCommand('redo', false);
   };
 
-  const changeFontSize = () => {
-    const size = pageSetup.fontSize;
-    document.execCommand("fontSize", false, "7"); // Use a placeholder
+  const handleBold = (): void => {
+    document.execCommand('bold', false);
+  };
 
-    // Find the font elements and set the correct size
-    if (editorRef.current) {
-      const fontElements = editorRef.current.querySelectorAll('font[size="7"]');
-      fontElements.forEach((el) => {
-        el.removeAttribute("size");
-        (el as HTMLElement).style.fontSize = size + "pt";
-      });
+  const handleItalic = (): void => {
+    document.execCommand('italic', false);
+  };
+
+  const handleUnderline = (): void => {
+    document.execCommand('underline', false);
+  };
+
+  const handleStrikethrough = (): void => {
+    document.execCommand('strikethrough', false);
+  };
+
+  const handleAlignLeft = (): void => {
+    document.execCommand('justifyLeft', false);
+  };
+
+  const handleAlignCenter = (): void => {
+    document.execCommand('justifyCenter', false);
+  };
+
+  const handleAlignRight = (): void => {
+    document.execCommand('justifyRight', false);
+  };
+
+  const handleAlignJustify = (): void => {
+    document.execCommand('justifyFull', false);
+  };
+
+  const handleBulletList = (): void => {
+    document.execCommand('insertUnorderedList', false);
+  };
+
+  const handleNumberList = (): void => {
+    document.execCommand('insertOrderedList', false);
+  };
+
+  const handleIndent = (): void => {
+    document.execCommand('indent', false);
+  };
+
+  const handleOutdent = (): void => {
+    document.execCommand('outdent', false);
+  };
+
+  // Insert operations
+  const handleInsertImage = (): void => {
+    const url = prompt('Enter image URL:');
+    if (url) {
+      document.execCommand('insertImage', false, url);
     }
   };
 
-  const changeFontFamily = () => {
-    const fontFamilyValue = pageSetup.fontFamily;
-    document.execCommand("fontName", false, fontFamilyValue);
+  const handleInsertTable = (rows: number, cols: number): void => {
+    let tableHTML = '<table border="1" style="border-collapse: collapse; width: 100%;">';
+    for (let i = 0; i < rows; i++) {
+      tableHTML += '<tr>';
+      for (let j = 0; j < cols; j++) {
+        tableHTML += '<td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>';
+      }
+      tableHTML += '</tr>';
+    }
+    tableHTML += '</table>';
+    document.execCommand('insertHTML', false, tableHTML);
   };
 
-  const showInsertLinkModal = () => {
+  const handleInsertLink = (): void => {
     const selection = window.getSelection();
-    const selectedText = selection?.toString() || "";
-
-    setModals((prev) => ({ ...prev, insertLink: true }));
-    setFindReplace((prev) => ({
-      ...prev,
-      findInput: selectedText,
-      replaceInput: "",
-    }));
+    const selectedText = selection?.toString() || '';
+    setLinkText(selectedText);
+    setShowInsertLink(true);
   };
 
-  const insertLink = () => {
-    const text = findReplace.findInput || findReplace.replaceInput;
-    const url = findReplace.replaceInput;
-    if (!url) {
-      alert("Please enter a URL");
+  const insertLink = (): void => {
+    if (!linkUrl) {
+      alert('Please enter a URL');
       return;
     }
-    document.execCommand("createLink", false, url);
-    setModals((prev) => ({ ...prev, insertLink: false }));
-  };
-
-  const insertImage = () => {
-    const url = prompt("Enter image URL:");
-    if (url) {
-      document.execCommand("insertImage", false, url);
+    
+    if (linkText) {
+      const linkHTML = `<a href="${linkUrl}" target="_blank">${linkText}</a>`;
+      document.execCommand('insertHTML', false, linkHTML);
+    } else {
+      document.execCommand('createLink', false, linkUrl);
     }
+    
+    setShowInsertLink(false);
+    setLinkText('');
+    setLinkUrl('');
   };
 
-  const insertTable = () => {
-    const rows = prompt("Enter number of rows:", "3");
-    const cols = prompt("Enter number of columns:", "3");
-    if (rows && cols) {
-      let tableHTML =
-        '<table border="1" style="border-collapse: collapse; width: 100%;">';
-      for (let i = 0; i < parseInt(rows); i++) {
-        tableHTML += "<tr>";
-        for (let j = 0; j < parseInt(cols); j++) {
-          tableHTML +=
-            '<td style="border: 1px solid #000; padding: 8px;">&nbsp;</td>';
-        }
-        tableHTML += "</tr>";
-      }
-      tableHTML += "</table>";
-      document.execCommand("insertHTML", false, tableHTML);
-    }
+  // Zoom operations
+  const handleZoomIn = (): void => {
+    setZoomLevel(prev => Math.min(prev + 10, 200));
   };
 
-  const toggleFindReplace = () => {
-    setFindReplace((prev) => ({ ...prev, active: !prev.active }));
-    if (!findReplace.active) {
-      // Focus on find input when panel opens
-      setTimeout(() => {
-        const findInputEl = document.getElementById("findInput");
-        if (findInputEl) findInputEl.focus();
-      }, 100);
-    }
+  const handleZoomOut = (): void => {
+    setZoomLevel(prev => Math.max(prev - 10, 50));
   };
 
-  const findPrevious = () => {
-    alert("Finding previous match for: " + findReplace.findInput);
+  // Analysis operations
+  const handleCitationManager = (): void => {
+    const mockCitations: Citation[] = [
+      { style: 'APA', text: 'Smith, J. (2023). Research Methods in Computer Science. Academic Press.' },
+      { style: 'MLA', text: 'Johnson, Mary. "Modern Writing Techniques." Journal of Writing, vol. 45, 2023, pp. 123-145.' },
+      { style: 'Chicago', text: 'Brown, David. The Art of Documentation. New York: Publishing House, 2023.' }
+    ];
+    setCitationsData(mockCitations);
+    setIsChatOpen(true);
   };
 
-  const findNext = () => {
-    alert("Finding next match for: " + findReplace.findInput);
+  const handlePlagiarismCheck = (): void => {
+    const mockPlagiarismData: PlagiarismData = {
+      score: 85,
+      issues: [
+        { source: 'Wikipedia.org', text: 'This text appears to match content from an online source.' },
+        { source: 'Academic Journal', text: 'Similar phrasing found in published research.' }
+      ]
+    };
+    setPlagiarismData(mockPlagiarismData);
+    setIsChatOpen(true);
   };
 
-  const replaceAll = () => {
-    alert(
-      'Replacing all instances of "' +
-        findReplace.findInput +
-        '" with "' +
-        findReplace.replaceInput +
-        '"'
-    );
+  const handleGrammarCheck = (): void => {
+    const mockGrammarData: GrammarData[] = [
+      { type: 'error', category: 'Grammar', text: 'Subject-verb disagreement', suggestion: 'Change "are" to "is"' },
+      { type: 'suggestion', category: 'Style', text: 'Consider using active voice', suggestion: 'Replace passive construction with active voice' },
+      { type: 'error', category: 'Spelling', text: 'Misspelled word: "recieve"', suggestion: 'Change to "receive"' }
+    ];
+    setGrammarData(mockGrammarData);
+    setIsChatOpen(true);
+  };
+ const handleFindReplace = (): void => {
+    setShowFindReplace(true);
+  };
+  const handleFindNext = (): void => {
+  if (!findText) return;
+  
+  const selection = window.getSelection();
+  if (selection) {
+    selection.removeAllRanges();
+  }
+  
+  // Use type assertion to tell TypeScript that 'find' exists
+  (window as any).find(findText);
+};
+
+  const handleReplaceAll = (): void => {
+    if (!findText || !replaceText || !editorRef.current) return;
+    
+    const content = editorRef.current.innerHTML;
+    const newContent = content.replace(new RegExp(findText, 'g'), replaceText);
+    editorRef.current.innerHTML = newContent;
+    updateWordCount();
   };
 
-  const showWordCount = () => {
-    updateWordCount(true);
-    setModals((prev) => ({ ...prev, wordCount: true }));
+  // Word count and stats
+  const handleWordCount = (): void => {
+    setShowWordCount(true);
   };
 
-  const updateWordCount = (updateModal: boolean = false) => {
-    const text = editorRef.current?.innerText || "";
-    const words = text
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0);
-    const charsNoSpaces = text.replace(/\s/g, "").length;
+  const updateWordCount = (): void => {
+    if (!editorRef.current) return;
+    
+    const text = editorRef.current.innerText || '';
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    const charsNoSpaces = text.replace(/\s/g, '').length;
     const charsWithSpaces = text.length;
-    const paragraphs = text
-      .split(/\n+/)
-      .filter((p) => p.trim().length > 0).length;
+    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0).length;
     const lines = text.split(/\n/).length;
 
-    // Update status bar
-    setStats({
+    const newStats: DocumentStats = {
       words: words.length,
       characters: charsWithSpaces,
-      pages: Math.ceil(lines / 25), // Approximation
+      pages: Math.ceil(lines / 25),
       charsNoSpaces,
       charsWithSpaces,
       paragraphs,
       lines,
-    });
+    };
 
-    // Update modal if requested
-    if (updateModal) {
-      setModals((prev) => ({ ...prev, wordCount: true }));
+    setStats(newStats);
+  };
+
+  // Page setup operations
+  const handlePageSetupChange = (property: keyof PageSetup, value: string | number): void => {
+    setPageSetup(prev => ({
+      ...prev,
+      [property]: value
+    }));
+
+    if (property === 'fontFamily' || property === 'fontSize') {
+      // Apply font changes to editor
+      if (editorRef.current) {
+        if (property === 'fontFamily') {
+          editorRef.current.style.fontFamily = value as string;
+        } else if (property === 'fontSize') {
+          editorRef.current.style.fontSize = value + 'px';
+        }
+      }
     }
   };
-
-  const updatePageSetup = () => {
-    console.log("Page size:", pageSetup.pageSize);
-    console.log("Margin size:", pageSetup.marginSize);
-  };
-
-  const updateButtonState = () => {
-    // Update button active states based on current selection
-    // This is a simplified implementation
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    const range = selection.getRangeAt(0);
-    const parentElement = range.commonAncestorContainer.parentElement;
-
-    // In a real implementation, you would update button states here
-    // This would require refs to each button to toggle their active state
-  };
-
+  if (isLoading) {
+    return <LoadingAnimation />;
+  }
   return (
-    <div className="container">
-      <header>
-        <h1>
-          <i className="fas fa-file-word"></i> Document Editor
-        </h1>
-        <p className="subtitle">
-          Full-featured word processor with Google Docs-like functionality
-        </p>
-      </header>
+    <div className="h-screen bg-black text-white flex flex-col">
+      <Header />
 
-      <div className="app-container">
-        <div className="toolbar">
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={newDocument}
-              title="New Document"
-            >
-              <i className="fas fa-file"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => fileInputRef.current?.click()}
-              title="Open Document"
-            >
-              <i className="fas fa-folder-open"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={saveDocument}
-              title="Save Document"
-            >
-              <i className="fas fa-save"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={printDocument}
-              title="Print"
-            >
-              <i className="fas fa-print"></i>
-            </button>
-          </div>
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={() => document.execCommand("undo", false, undefined)}
-              title="Undo"
-            >
-              <i className="fas fa-undo"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => document.execCommand("redo", false, undefined)}
-              title="Redo"
-            >
-              <i className="fas fa-redo"></i>
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={() => toggleFormat("bold")}
-              title="Bold"
-            >
-              <i className="fas fa-bold"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => toggleFormat("italic")}
-              title="Italic"
-            >
-              <i className="fas fa-italic"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => toggleFormat("underline")}
-              title="Underline"
-            >
-              <i className="fas fa-underline"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => toggleFormat("strikethrough")}
-              title="Strikethrough"
-            >
-              <i className="fas fa-strikethrough"></i>
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={() => setAlignment("left")}
-              title="Align Left"
-            >
-              <i className="fas fa-align-left"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => setAlignment("center")}
-              title="Align Center"
-            >
-              <i className="fas fa-align-center"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => setAlignment("right")}
-              title="Align Right"
-            >
-              <i className="fas fa-align-right"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => setAlignment("justify")}
-              title="Justify"
-            >
-              <i className="fas fa-align-justify"></i>
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <select
-              value={pageSetup.fontSize}
-              onChange={(e) => {
-                setPageSetup((prev) => ({ ...prev, fontSize: e.target.value }));
-                changeFontSize();
-              }}
-              id="fontSize"
-            >
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-              <option value="14">14</option>
-              <option value="16">16</option>
-              <option value="18">18</option>
-              <option value="20">20</option>
-              <option value="22">22</option>
-              <option value="24">24</option>
-              <option value="26">26</option>
-              <option value="28">28</option>
-              <option value="36">36</option>
-              <option value="48">48</option>
-              <option value="72">72</option>
-            </select>
-
-            <select
-              value={pageSetup.fontFamily}
-              onChange={(e) => {
-                setPageSetup((prev) => ({
-                  ...prev,
-                  fontFamily: e.target.value,
-                }));
-                changeFontFamily();
-              }}
-              id="fontFamily"
-            >
-              <option value="Arial, sans-serif">Arial</option>
-              <option value="'Times New Roman', serif">Times New Roman</option>
-              <option value="'Courier New', monospace">Courier New</option>
-              <option value="Georgia, serif">Georgia</option>
-              <option value="Verdana, sans-serif">Verdana</option>
-              <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
-            </select>
-          </div>
-
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={showInsertLinkModal}
-              title="Insert Link"
-            >
-              <i className="fas fa-link"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={insertImage}
-              title="Insert Image"
-            >
-              <i className="fas fa-image"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={insertTable}
-              title="Insert Table"
-            >
-              <i className="fas fa-table"></i>
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={() =>
-                document.execCommand("insertUnorderedList", false, undefined)
-              }
-              title="Bulleted List"
-            >
-              <i className="fas fa-list-ul"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() =>
-                document.execCommand("insertOrderedList", false, undefined)
-              }
-              title="Numbered List"
-            >
-              <i className="fas fa-list-ol"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => document.execCommand("indent", false, undefined)}
-              title="Increase Indent"
-            >
-              <i className="fas fa-indent"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={() => document.execCommand("outdent", false, undefined)}
-              title="Decrease Indent"
-            >
-              <i className="fas fa-outdent"></i>
-            </button>
-          </div>
-
-          <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={toggleFindReplace}
-              title="Find & Replace"
-            >
-              <i className="fas fa-search"></i>
-            </button>
-            <button
-              className="toolbar-btn"
-              onClick={showWordCount}
-              title="Word Count"
-            >
-              <i className="fas fa-font"></i>
-            </button>
-          </div>
+        <div className="flex-1 flex flex-col">
+          <Toolbar 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+            zoomLevel={zoomLevel}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onCitationManager={handleCitationManager}
+            onPlagiarismCheck={handlePlagiarismCheck}
+            onGrammarCheck={handleGrammarCheck}
+            onNewDocument={handleNewDocument}
+            onOpenDocument={handleOpenDocument}
+            onSaveDocument={handleSaveDocument}
+            onPrintDocument={handlePrintDocument}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onBold={handleBold}
+            onItalic={handleItalic}
+            onUnderline={handleUnderline}
+            onStrikethrough={handleStrikethrough}
+            onAlignLeft={handleAlignLeft}
+            onAlignCenter={handleAlignCenter}
+            onAlignRight={handleAlignRight}
+            onAlignJustify={handleAlignJustify}
+            onInsertLink={handleInsertLink}
+            onInsertImage={handleInsertImage}
+            onInsertTable={handleInsertTable}
+            onBulletList={handleBulletList}
+            onNumberList={handleNumberList}
+            onIndent={handleIndent}
+            onOutdent={handleOutdent}
+            onFindReplace={handleFindReplace}
+            onWordCount={handleWordCount}
+            pageSetup={pageSetup}
+            onPageSetupChange={handlePageSetupChange}
+          />
+          <Editor 
+            zoomLevel={zoomLevel} 
+            isSidebarOpen={isSidebarOpen}
+            isChatOpen={isChatOpen}
+            pageSetup={pageSetup}
+            stats={stats}
+            onStatsUpdate={setStats}
+          />
         </div>
 
-        <div className="editor-container">
-          <div className="sidebar">
-            <div className="sidebar-section">
-              <h3>Recent Documents</h3>
-              <div className="document-list">
-                <div className="document-item">
-                  <h4>Project Proposal</h4>
-                  <p>Last edited: Today</p>
-                </div>
-                <div className="document-item">
-                  <h4>Meeting Notes</h4>
-                  <p>Last edited: Yesterday</p>
-                </div>
-                <div className="document-item">
-                  <h4>Research Paper</h4>
-                  <p>Last edited: 2 days ago</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="sidebar-section">
-              <h3>Templates</h3>
-              <div className="document-list">
-                <div className="document-item">
-                  <h4>Business Letter</h4>
-                  <p>Professional letter template</p>
-                </div>
-                <div className="document-item">
-                  <h4>Resume</h4>
-                  <p>Modern resume template</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="main-content">
-            <div className="document-area">
-              <div
-                ref={editorRef}
-                id="editor"
-                contentEditable="true"
-                onInput={handleEditorInput}
-                onKeyUp={handleEditorInput}
-                onMouseUp={handleEditorInput}
-                // Remove dangerouslySetInnerHTML to prevent cursor jumping
-                // Initial content is set in useEffect
-              />
-            </div>
-
-            <div className="status-bar">
-              <div className="page-setup">
-                <label>Page Size:</label>
-                <select
-                  value={pageSetup.pageSize}
-                  onChange={(e) => {
-                    setPageSetup((prev) => ({
-                      ...prev,
-                      pageSize: e.target.value,
-                    }));
-                    updatePageSetup();
-                  }}
-                >
-                  <option value="letter">Letter (8.5" x 11")</option>
-                  <option value="a4">A4 (210mm x 297mm)</option>
-                  <option value="legal">Legal (8.5" x 14")</option>
-                </select>
-                <label>Margins:</label>
-                <input
-                  type="number"
-                  value={pageSetup.marginSize}
-                  onChange={(e) => {
-                    setPageSetup((prev) => ({
-                      ...prev,
-                      marginSize: parseFloat(e.target.value),
-                    }));
-                    updatePageSetup();
-                  }}
-                  min="0.1"
-                  step="0.1"
-                />{" "}
-                inches
-              </div>
-              <div>
-                Words: <span id="wordCount">{stats.words}</span> | Characters:{" "}
-                <span id="charCount">{stats.characters}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ChatSidebar 
+          isOpen={isChatOpen} 
+          onToggle={() => setIsChatOpen(!isChatOpen)}
+          citationsData={citationsData}
+          plagiarismData={plagiarismData}
+          grammarData={grammarData}
+        />
       </div>
 
       {/* Hidden file input */}
@@ -1319,176 +1234,37 @@ const DocumentEditor: React.FC = () => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".docx"
-        style={{ display: "none" }}
+        accept=".docx,.doc,.txt"
+        style={{ display: 'none' }}
       />
 
-      {/* Find & Replace Panel */}
-      <div
-        className={`find-replace ${findReplace.active ? "active" : ""}`}
-        id="findReplacePanel"
-      >
-        <h3>
-          Find & Replace
-          <button
-            className="close-btn"
-            onClick={() =>
-              setFindReplace((prev) => ({ ...prev, active: false }))
-            }
-          >
-            &times;
-          </button>
-        </h3>
-        <input
-          type="text"
-          id="findInput"
-          value={findReplace.findInput}
-          onChange={(e) =>
-            setFindReplace((prev) => ({ ...prev, findInput: e.target.value }))
-          }
-          placeholder="Find"
-        />
-        <input
-          type="text"
-          id="replaceInput"
-          value={findReplace.replaceInput}
-          onChange={(e) =>
-            setFindReplace((prev) => ({
-              ...prev,
-              replaceInput: e.target.value,
-            }))
-          }
-          placeholder="Replace with"
-        />
-        <div className="find-replace-buttons">
-          <button className="btn-secondary" onClick={findPrevious}>
-            Previous
-          </button>
-          <button className="btn-secondary" onClick={findNext}>
-            Next
-          </button>
-          <button className="btn-primary" onClick={replaceAll}>
-            Replace All
-          </button>
-        </div>
-      </div>
+      {/* Modals */}
+      <WordCountModal
+        isOpen={showWordCount}
+        onClose={() => setShowWordCount(false)}
+        stats={stats}
+      />
 
-      {/* Word Count Modal */}
-      <div
-        className={`modal ${modals.wordCount ? "active" : ""}`}
-        id="wordCountModal"
-      >
-        <div className="modal-content">
-          <div className="modal-header">
-            <h2>Document Statistics</h2>
-            <button
-              className="close-btn"
-              onClick={() =>
-                setModals((prev) => ({ ...prev, wordCount: false }))
-              }
-            >
-              &times;
-            </button>
-          </div>
-          <div className="modal-body">
-            <p>
-              <strong>Pages:</strong> <span id="pagesCount">{stats.pages}</span>
-            </p>
-            <p>
-              <strong>Words:</strong>{" "}
-              <span id="modalWordCount">{stats.words}</span>
-            </p>
-            <p>
-              <strong>Characters (no spaces):</strong>{" "}
-              <span id="charsNoSpacesCount">{stats.charsNoSpaces}</span>
-            </p>
-            <p>
-              <strong>Characters (with spaces):</strong>{" "}
-              <span id="charsWithSpacesCount">{stats.charsWithSpaces}</span>
-            </p>
-            <p>
-              <strong>Paragraphs:</strong>{" "}
-              <span id="paragraphsCount">{stats.paragraphs}</span>
-            </p>
-            <p>
-              <strong>Lines:</strong> <span id="linesCount">{stats.lines}</span>
-            </p>
-          </div>
-          <div className="modal-footer">
-            <button
-              className="btn-secondary"
-              onClick={() =>
-                setModals((prev) => ({ ...prev, wordCount: false }))
-              }
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
+      <FindReplaceModal
+        isOpen={showFindReplace}
+        onClose={() => setShowFindReplace(false)}
+        findText={findText}
+        replaceText={replaceText}
+        onFindChange={setFindText}
+        onReplaceChange={setReplaceText}
+        onFindNext={handleFindNext}
+        onReplaceAll={handleReplaceAll}
+      />
 
-      {/* Insert Link Modal */}
-      <div
-        className={`modal ${modals.insertLink ? "active" : ""}`}
-        id="insertLinkModal"
-      >
-        <div className="modal-content">
-          <div className="modal-header">
-            <h2>Insert Link</h2>
-            <button
-              className="close-btn"
-              onClick={() =>
-                setModals((prev) => ({ ...prev, insertLink: false }))
-              }
-            >
-              &times;
-            </button>
-          </div>
-          <div className="modal-body">
-            <label htmlFor="linkText">Text to display</label>
-            <input
-              type="text"
-              id="linkText"
-              value={findReplace.findInput}
-              onChange={(e) =>
-                setFindReplace((prev) => ({
-                  ...prev,
-                  findInput: e.target.value,
-                }))
-              }
-              placeholder="Link text"
-            />
-            <label htmlFor="linkUrl">URL</label>
-            <input
-              type="url"
-              id="linkUrl"
-              value={findReplace.replaceInput}
-              onChange={(e) =>
-                setFindReplace((prev) => ({
-                  ...prev,
-                  replaceInput: e.target.value,
-                }))
-              }
-              placeholder="https://example.com"
-            />
-          </div>
-          <div className="modal-footer">
-            <button
-              className="btn-secondary"
-              onClick={() =>
-                setModals((prev) => ({ ...prev, insertLink: false }))
-              }
-            >
-              Cancel
-            </button>
-            <button className="btn-primary" onClick={insertLink}>
-              Insert
-            </button>
-          </div>
-        </div>
-      </div>
+      <InsertLinkModal
+        isOpen={showInsertLink}
+        onClose={() => setShowInsertLink(false)}
+        linkText={linkText}
+        linkUrl={linkUrl}
+        onLinkTextChange={setLinkText}
+        onLinkUrlChange={setLinkUrl}
+        onInsert={insertLink}
+      />
     </div>
   );
-};
-
-export default DocumentEditor;
+}
