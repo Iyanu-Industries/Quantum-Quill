@@ -926,13 +926,13 @@ interface EditorProps {
   zoomLevel: number;
   isSidebarOpen: boolean;
     pageSetup: PageSetup;
-
+cleanupMarkers: ()=> void;
   isChatOpen: boolean;
   stats: DocumentStats;
   onStatsUpdate: (stats: DocumentStats) => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ zoomLevel, isSidebarOpen, isChatOpen, pageSetup, stats, onStatsUpdate }) => {
+const Editor: React.FC<EditorProps> = ({ cleanupMarkers, zoomLevel, isSidebarOpen, isChatOpen, pageSetup, stats, onStatsUpdate }) => {
   // Fix: Type the ref as HTMLDivElement
   const editorRef = useRef<HTMLDivElement>(null);
   const [editorWidth, setEditorWidth] = useState('max-w-4xl');
@@ -954,6 +954,8 @@ const Editor: React.FC<EditorProps> = ({ zoomLevel, isSidebarOpen, isChatOpen, p
   }, []);
 
   const handleEditorInput = () => {
+  cleanupMarkers();
+
     if (!editorRef.current) return;
     
     const text = editorRef.current.innerText || '';
@@ -1074,107 +1076,116 @@ const [pageSetup, setPageSetup] = useState<PageSetup>({
     fontFamily: "'Times New Roman', serif",
   });
 // Update your changeFontSize function
+// Fixed changeFontSize
 const changeFontSize = (size: string) => {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return;
   
   const range = selection.getRangeAt(0);
-  
-  // Remove any existing font size spans in the selection
-  if (!range.collapsed) {
-    const spanElements = range.cloneContents().querySelectorAll('span[style*="font-size"]');
-    spanElements.forEach(span => {
-      const parent = span.parentNode;
-      while (span.firstChild) {
-        parent?.insertBefore(span.firstChild, span);
-      }
-      parent?.removeChild(span);
-    });
-  }
-
-  // Create new span with the desired font size
   const span = document.createElement('span');
   span.style.fontSize = `${size}px`;
-  
+
   if (range.collapsed) {
-    // For cursor position (no selection)
-    span.textContent = '\u200B'; // Zero-width space
-    range.insertNode(span);
+    // Create marker for cursor position
+    const marker = document.createElement('span');
+    marker.className = 'font-size-marker';
+    marker.dataset.fontSize = size;
+    marker.innerHTML = '&#8203;'; // Zero-width space
+    range.insertNode(marker);
     
-    // Move cursor inside the span
+    // Move cursor inside marker
     const newRange = document.createRange();
-    newRange.setStart(span, 0);
+    newRange.setStart(marker, 0);
     newRange.collapse(true);
     selection.removeAllRanges();
     selection.addRange(newRange);
   } else {
-    // For selected text
+    // Remove existing font size spans in selection
+    const existingSpans = range.cloneContents().querySelectorAll('span[style*="font-size"]');
+    existingSpans.forEach(existingSpan => {
+      const parent = existingSpan.parentNode;
+      while (existingSpan.firstChild) {
+        parent?.insertBefore(existingSpan.firstChild, existingSpan);
+      }
+      parent?.removeChild(existingSpan);
+    });
+
+    // Apply new size
     const fragment = range.extractContents();
     span.appendChild(fragment);
     range.insertNode(span);
-    
-    // Move cursor after the span
-    const newRange = document.createRange();
-    newRange.setStartAfter(span);
-    newRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
   }
-  
-  // Clean up any empty spans that might have been created
-  setTimeout(() => {
-    const editor = editorRef.current;
-    if (editor) {
-      const emptySpans = editor.querySelectorAll('span:empty');
-      emptySpans.forEach(span => span.parentNode?.removeChild(span));
-    }
-  }, 0);
 };
 
+// Fixed changeFontFamily
 const changeFontFamily = (fontFamily: string) => {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
-    return;
-  }
+  if (!selection || selection.rangeCount === 0) return;
 
   const range = selection.getRangeAt(0);
   
-  // Case 1: No text selected (collapsed selection)
   if (range.collapsed) {
-    const span = document.createElement('span');
-    span.style.fontFamily = fontFamily;
-    // Don't set font size here - let it inherit
-    span.textContent = '\u200B';
-    range.insertNode(span);
+    // Create marker for cursor
+    const marker = document.createElement('span');
+    marker.className = 'font-family-marker';
+    marker.dataset.fontFamily = fontFamily;
+    marker.innerHTML = '&#8203;'; // Zero-width space
+    range.insertNode(marker);
+    
+    // Move cursor
     const newRange = document.createRange();
-    newRange.setStart(span, 0);
+    newRange.setStart(marker, 0);
     newRange.collapse(true);
     selection.removeAllRanges();
     selection.addRange(newRange);
-    return;
+  } else {
+    // Remove existing font family spans
+    const existingSpans = range.cloneContents().querySelectorAll('span[style*="font-family"]');
+    existingSpans.forEach(existingSpan => {
+      const parent = existingSpan.parentNode;
+      while (existingSpan.firstChild) {
+        parent?.insertBefore(existingSpan.firstChild, existingSpan);
+      }
+      parent?.removeChild(existingSpan);
+    });
+
+    // Apply new font family
+    const span = document.createElement('span');
+    span.style.fontFamily = fontFamily;
+    const fragment = range.extractContents();
+    span.appendChild(fragment);
+    range.insertNode(span);
   }
-  
-  // Case 2: Text is selected
-  const fragment = range.extractContents();
-  const container = document.createElement('span');
-  container.style.fontFamily = fontFamily;
-  
-  // Move all nodes from the fragment to the container
-  while (fragment.firstChild) {
-    container.appendChild(fragment.firstChild);
-  }
-  
-  // Insert the container at the original selection position
-  range.insertNode(container);
-  
-  // Position cursor after the container
-  const newRange = document.createRange();
-  newRange.setStartAfter(container);
-  newRange.collapse(true);
-  
-  selection.removeAllRanges();
-  selection.addRange(newRange);
 };
+
+// Add this cleanup function to handle markers
+const cleanupMarkers = () => {
+  const editor = editorRef.current;
+  if (!editor) return;
+
+  // Remove font size markers after typing starts
+  const fontSizeMarkers = editor.querySelectorAll('.font-size-marker');
+  fontSizeMarkers.forEach(marker => {
+    const parent = marker.parentNode;
+    while (marker.firstChild) {
+      parent?.insertBefore(marker.firstChild, marker);
+    }
+    parent?.removeChild(marker);
+  });
+
+  // Remove font family markers
+  const fontFamilyMarkers = editor.querySelectorAll('.font-family-marker');
+  fontFamilyMarkers.forEach(marker => {
+    const parent = marker.parentNode;
+    while (marker.firstChild) {
+      parent?.insertBefore(marker.firstChild, marker);
+    }
+    parent?.removeChild(marker);
+  });
+};
+
+// Call cleanupMarkers in handleEditorInput
+
 const handlePageSetupChange = (property: keyof PageSetup, value: string | number) => {
   setPageSetup(prev => ({...prev, [property]: value}));
   
@@ -1317,6 +1328,7 @@ const [stats, setStats] = useState<DocumentStats>({
             zoomLevel={zoomLevel} 
             isSidebarOpen={isSidebarOpen}
             isChatOpen={isChatOpen}
+            cleanupMarkers={cleanupMarkerscleanupMarkers}
             pageSetup={pageSetup}
             stats={stats}
             onStatsUpdate={setStats}
