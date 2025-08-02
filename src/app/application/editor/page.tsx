@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 
 interface ToolbarProps {
   activeTab: string;
@@ -620,15 +620,16 @@ interface ChatSidebarProps {
   citationsData: any[];
   plagiarismData: any;
   grammarData: any[];
+  activeView:string;
+  setActiveView: (view:'chat' | 'citations' | 'plagiarism' | 'grammar')=>void;
 }
 
-export function ChatSidebar({ isOpen, onToggle, citationsData, plagiarismData, grammarData }: ChatSidebarProps) {
+export function ChatSidebar({ isOpen, onToggle,activeView, setActiveView, citationsData, plagiarismData, grammarData }: ChatSidebarProps) {
   const [messages, setMessages] = useState([
     { type: 'ai', content: 'Hello, how can I assist you today?' },
     { type: 'user', content: 'I need help with formatting.' },
   ]);
   const [inputMessage, setInputMessage] = useState('');
-  const [activeView, setActiveView] = useState<'chat' | 'citations' | 'plagiarism' | 'grammar'>('chat');
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
@@ -931,8 +932,14 @@ cleanupMarkers: ()=> void;
   stats: DocumentStats;
   onStatsUpdate: (stats: DocumentStats) => void;
 }
+export interface EditorHandle {
+  getEditorContent: () => string;
+  getEditorText: () => string;
+    getEditorElement: () => HTMLElement | null;
 
-const Editor: React.FC<EditorProps> = ({ cleanupMarkers, zoomLevel, isSidebarOpen, isChatOpen, pageSetup, stats, onStatsUpdate }) => {
+}
+
+const Editor= forwardRef<EditorHandle, EditorProps> (({ cleanupMarkers, zoomLevel, isSidebarOpen, isChatOpen, pageSetup, stats, onStatsUpdate },ref) => {
   // Fix: Type the ref as HTMLDivElement
   const editorRef = useRef<HTMLDivElement>(null);
   const [editorWidth, setEditorWidth] = useState('max-w-4xl');
@@ -953,6 +960,11 @@ const Editor: React.FC<EditorProps> = ({ cleanupMarkers, zoomLevel, isSidebarOpe
     }
   }, []);
 
+   useImperativeHandle(ref, () => ({
+    getEditorContent: () => editorRef.current?.innerHTML || '',
+    getEditorText: () => editorRef.current?.innerText || '',
+    getEditorElement: () => editorRef.current  
+  }));
   const handleEditorInput = () => {
   cleanupMarkers();
 
@@ -1021,7 +1033,7 @@ const Editor: React.FC<EditorProps> = ({ cleanupMarkers, zoomLevel, isSidebarOpe
       </div>
     </div>
   );
-};
+});
 
 interface Citation {
   style: 'APA' | 'MLA' | 'Chicago' | 'Harvard';
@@ -1059,7 +1071,8 @@ export default function Home() {
   const [citationsData, setCitationsData] = useState<Citation[]>([]);
   const [plagiarismData, setPlagiarismData] = useState<PlagiarismData | null>(null);
   const [grammarData, setGrammarData] = useState<GrammarCheckResult[]>([]);
-  const editorRef = useRef<HTMLDivElement>(null);
+ const editorRef = useRef<EditorHandle>(null);
+             const [activeView, setActiveView] = useState<'chat' | 'citations' | 'plagiarism' | 'grammar'>('chat');
   
   useEffect(() => {
     // Simulate loading time
@@ -1077,6 +1090,41 @@ const [pageSetup, setPageSetup] = useState<PageSetup>({
   });
 // Update your changeFontSize function
 // Fixed changeFontSize
+
+const checkGrammar = async (text: string): Promise<GrammarCheckResult[]> => {
+  try {
+    // Using the public API (has rate limits)
+    const response = await fetch('https://api.languagetool.org/v2/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `text=${encodeURIComponent(text)}&language=en-US`
+    });
+    
+    const data = await response.json();
+    
+    // Convert to your GrammarCheckResult format
+    const results = data.matches.map((match: any) => ({
+      type: match.rule.issueType === 'grammar' ? 'error' : 'suggestion',
+      category: match.rule.category.name,
+      text: match.context.text.substring(match.context.offset, match.context.offset + match.context.length),
+      suggestion: match.replacements[0]?.value || 'No suggestion available'
+    }));
+    
+    return results;
+  } catch (error) {
+    console.error("Grammar check failed:", error);
+    return []; // Return empty array on error
+  }
+};
+
+// Usage in your handleGrammarCheck function
+const handleGrammarCheck = async () => {
+  const text = editorRef.current?.getEditorText() || '';
+  const grammarResults = await checkGrammar(text);
+  setGrammarData(grammarResults);
+setIsChatOpen(true);
+    setActiveView('grammar')
+};
 const changeFontSize = (size: string) => {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return;
@@ -1160,31 +1208,43 @@ const changeFontFamily = (fontFamily: string) => {
 
 // Add this cleanup function to handle markers
 const cleanupMarkers = () => {
-  const editor = editorRef.current;
-  if (!editor) return;
+  // Get the actual DOM element from the editor handle
+  const editorElement = editorRef.current?.getEditorElement();
+  if (!editorElement) return;
 
-  // Remove font size markers after typing starts
-  const fontSizeMarkers = editor.querySelectorAll('.font-size-marker');
-  fontSizeMarkers.forEach(marker => {
+  // Helper function to safely cleanup a marker
+  const cleanupMarker = (marker: Element) => {
     const parent = marker.parentNode;
+    if (!parent) return;
+    
+    const fragment = document.createDocumentFragment();
+    
+    // Move all children to the fragment
     while (marker.firstChild) {
-      parent?.insertBefore(marker.firstChild, marker);
+      fragment.appendChild(marker.firstChild);
     }
-    parent?.removeChild(marker);
-  });
+    
+    // Insert the fragment before the marker
+    parent.insertBefore(fragment, marker);
+    
+    // Remove the marker
+    parent.removeChild(marker);
+  };
 
-  // Remove font family markers
-  const fontFamilyMarkers = editor.querySelectorAll('.font-family-marker');
-  fontFamilyMarkers.forEach(marker => {
-    const parent = marker.parentNode;
-    while (marker.firstChild) {
-      parent?.insertBefore(marker.firstChild, marker);
-    }
-    parent?.removeChild(marker);
+  // Process markers safely
+  const markerClasses = ['font-size-marker', 'font-family-marker'];
+  
+  markerClasses.forEach(markerClass => {
+    // Convert NodeList to array using the actual DOM element
+    const markers = Array.from(editorElement.querySelectorAll(`.${markerClass}`));
+    
+    markers.forEach(marker => {
+      if (marker.isConnected) {
+        cleanupMarker(marker);
+      }
+    });
   });
 };
-
-// Call cleanupMarkers in handleEditorInput
 
 const handlePageSetupChange = (property: keyof PageSetup, value: string | number) => {
   setPageSetup(prev => ({...prev, [property]: value}));
@@ -1264,6 +1324,7 @@ const [stats, setStats] = useState<DocumentStats>({
     ];
     setCitationsData(mockCitations);
     setIsChatOpen(true);
+    setActiveView('citations')
   };
 
   const handlePlagiarismCheck = () => {
@@ -1277,18 +1338,19 @@ const [stats, setStats] = useState<DocumentStats>({
     };
     setPlagiarismData(mockPlagiarismData);
     setIsChatOpen(true);
+    setActiveView('plagiarism')
   };
 
-  const handleGrammarCheck = () => {
-    // Simulate grammar check
-    const mockGrammarData:GrammarCheckResult[] = [
-      { type: 'error', category: 'Grammar', text: 'Subject-verb disagreement', suggestion: 'Change "are" to "is"' },
-      { type: 'suggestion', category: 'Style', text: 'Consider using active voice', suggestion: 'Replace passive construction with active voice' },
-      { type: 'error', category: 'Spelling', text: 'Misspelled word: "recieve"', suggestion: 'Change to "receive"' }
-    ];
-    setGrammarData(mockGrammarData);
-    setIsChatOpen(true);
-  };
+  // const handleGrammarCheck = () => {
+  //   // Simulate grammar check
+  //   const mockGrammarData:GrammarCheckResult[] = [
+  //     { type: 'error', category: 'Grammar', text: 'Subject-verb disagreement', suggestion: 'Change "are" to "is"' },
+  //     { type: 'suggestion', category: 'Style', text: 'Consider using active voice', suggestion: 'Replace passive construction with active voice' },
+  //     { type: 'error', category: 'Spelling', text: 'Misspelled word: "recieve"', suggestion: 'Change to "receive"' }
+  //   ];
+  //   setGrammarData(mockGrammarData);
+  //   setIsChatOpen(true);
+  // };
 
   if (isLoading) {
     return <LoadingAnimation />;
@@ -1325,10 +1387,11 @@ const [stats, setStats] = useState<DocumentStats>({
             changeFontSize={changeFontSize}
           />
           <Editor 
+            ref={editorRef}
             zoomLevel={zoomLevel} 
             isSidebarOpen={isSidebarOpen}
             isChatOpen={isChatOpen}
-            cleanupMarkers={cleanupMarkerscleanupMarkers}
+            cleanupMarkers={cleanupMarkers}
             pageSetup={pageSetup}
             stats={stats}
             onStatsUpdate={setStats}
@@ -1340,6 +1403,8 @@ const [stats, setStats] = useState<DocumentStats>({
           onToggle={() => setIsChatOpen(!isChatOpen)}
           citationsData={citationsData}
           plagiarismData={plagiarismData}
+          activeView={activeView}
+          setActiveView={setActiveView}
           grammarData={grammarData}
         />
       </div>
