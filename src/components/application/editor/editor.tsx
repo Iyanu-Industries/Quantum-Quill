@@ -14,6 +14,7 @@ interface EditorProps {
   cleanupMarkers: () => void;
   isChatOpen: boolean;
   stats: DocumentStats;
+  setZoomLevel?: (level: number) => void;
   onStatsUpdate: (stats: DocumentStats) => void;
 }
 export interface EditorHandle {
@@ -27,6 +28,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
     {
       cleanupMarkers,
       zoomLevel,
+      setZoomLevel,
       isSidebarOpen,
       isChatOpen,
       pageSetup,
@@ -37,17 +39,26 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
   ) => {
     // Fix: Type the ref as HTMLDivElement
     const editorRef = useRef<HTMLDivElement>(null);
-    const [editorWidth, setEditorWidth] = useState("max-w-4xl");
-
+    const [editorWidth, setEditorWidth] = useState("w-4xl min-w-4xl");
     useEffect(() => {
-      if (isSidebarOpen && isChatOpen) {
-        setEditorWidth("max-w-2xl");
-      } else if (isSidebarOpen || isChatOpen) {
-        setEditorWidth("max-w-3xl");
-      } else {
-        setEditorWidth("max-w-4xl");
+      // Each sidebar/chat is 48px wide-
+      let sidebars = 0;
+      if (isSidebarOpen) sidebars += 1;
+      if (isChatOpen) sidebars += 1;
+      const totalSidebarWidth = sidebars * 48;
+
+      // Calculate new zoom level based on available width
+      // Assume base zoom is 100 when no sidebar is open
+      // For every 48px, reduce zoom by a proportional amount
+      // You may want to tweak the divisor for your layout
+      const baseZoom = 100;
+      const zoomReductionPerSidebar = 6; // ~6% per 48px, adjust as needed
+      const newZoom = baseZoom - sidebars * zoomReductionPerSidebar;
+
+      if (setZoomLevel) {
+        setZoomLevel(newZoom);
       }
-    }, [isSidebarOpen, isChatOpen]);
+    }, [isSidebarOpen, isChatOpen, setZoomLevel]);
 
     useEffect(() => {
       if (editorRef.current && !editorRef.current.innerHTML.trim()) {
@@ -94,8 +105,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
     const fontSize = Math.round(16 * (zoomLevel / 100));
 
     return (
-      <div className="flex-1 flex flex-col bg-gray-100">
-        <div className="flex-1 p-8 overflow-y-scroll">
+      <div
+        style={{ scrollbarWidth: "thin" }}
+        className="flex-1  flex flex-col bg-gray-100 overflow-y-scroll pb-8"
+      >
+        <div className="flex-1 p-8 ">
           <div
             className={`${editorWidth} mx-auto bg-white rounded-lg shadow-lg min-h-[800px] p-8 transition-all duration-300`}
             style={{
@@ -119,7 +133,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
           </div>
         </div>
 
-        <div className="bg-gray-900 border-t border-gray-800 px-8 py-2 flex items-center justify-between text-sm text-gray-400">
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 px-8 py-2 flex items-center justify-between text-sm text-gray-400">
           <div className="flex items-center space-x-6">
             <span>Word Count: {stats.words}</span>
             <span>Character Count: {stats.characters}</span>

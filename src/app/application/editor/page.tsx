@@ -22,6 +22,13 @@ import {
 } from "@/components/application/editor/interfaces";
 
 export default function Home() {
+  const searchParams =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const projectTitle = searchParams?.get("title") || "";
+  const projectType = searchParams?.get("type") || "";
+  const projectDescription = searchParams?.get("description") || "";
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Format");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -402,10 +409,10 @@ export default function Home() {
       <Header />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
+        {/* <Sidebar
           isOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
+        /> */}
 
         <div className="flex-1 flex flex-col">
           <Toolbar
@@ -433,6 +440,7 @@ export default function Home() {
           <Editor
             ref={editorRef}
             zoomLevel={zoomLevel}
+            setZoomLevel={setZoomLevel}
             isSidebarOpen={isSidebarOpen}
             isChatOpen={isChatOpen}
             cleanupMarkers={cleanupMarkers}
@@ -443,6 +451,9 @@ export default function Home() {
         </div>
 
         <ChatSidebar
+          projectTitle={projectTitle}
+          projectType={projectType}
+          projectDescription={projectDescription}
           isOpen={isChatOpen}
           isPlagiarismLoading={isPlagiarismCheckLoading}
           onToggle={() => setIsChatOpen(!isChatOpen)}

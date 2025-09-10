@@ -2,6 +2,9 @@ import { useState } from "react";
 interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  projectTitle: string;
+  projectType: string;
+  projectDescription: string;
   isPlagiarismLoading?: boolean;
   citationsData: any[];
   plagiarismData: any;
@@ -13,6 +16,9 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({
+  projectTitle,
+  projectType,
+  projectDescription,
   isOpen,
   onToggle,
   activeView,
@@ -46,7 +52,7 @@ export function ChatSidebar({
   };
 
   const renderCitationsView = () => (
-    <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex-1 overflow-y-auto p-4 z-[999]">
       <h3 className="font-bold text-white mb-4">Citations Summary</h3>
       {citationsData.length === 0 ? (
         <div className="text-gray-400 text-center py-8">
@@ -183,7 +189,7 @@ export function ChatSidebar({
         ))}
       </div>
 
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-gray-700 z-[999]">
         <div className="flex space-x-2">
           <input
             type="text"

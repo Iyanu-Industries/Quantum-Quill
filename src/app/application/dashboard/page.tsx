@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-
+import { useRouter } from "next/navigation";
 const QuantumQuillDashboard = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -9,58 +9,57 @@ const QuantumQuillDashboard = () => {
   const [projectTitle, setProjectTitle] = useState("");
   const [projectType, setProjectType] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
-
-  const drafts = [
-    {
-      id: 1,
-      title: "AI in Education: Transforming Learning",
-      type: "Research Article",
-      status: "Draft",
-      statusColor: "bg-gray-100 text-gray-600",
-      lastModified: "May 2, 2025",
-    },
-    {
-      id: 2,
-      title: "Quantum Computing: The Next Frontier",
-      type: "Technical Paper",
-      status: "In Review",
-      statusColor: "bg-orange-100 text-orange-600",
-      lastModified: "May 1, 2025",
-    },
-    {
-      id: 3,
-      title: "Climate Change: Global Solutions",
-      type: "Policy Brief",
-      status: "Published",
-      statusColor: "bg-green-100 text-green-600",
-      lastModified: "April 28, 2025",
-    },
-    {
-      id: 4,
-      title: "The Future of Remote Work",
-      type: "Business Report",
-      status: "Draft",
-      statusColor: "bg-gray-100 text-gray-600",
-      lastModified: "April 25, 2025",
-    },
-    {
-      id: 5,
-      title: "Sustainable Architecture Principles",
-      type: "Design Guide",
-      status: "Draft",
-      statusColor: "bg-gray-100 text-gray-600",
-      lastModified: "April 22, 2025",
-    },
-    {
-      id: 6,
-      title: "Digital Privacy in the Modern Age",
-      type: "Essay",
-      status: "In Review",
-      statusColor: "bg-orange-100 text-orange-600",
-      lastModified: "April 20, 2025",
-    },
+  const drafts: any[] = [
+    // {
+    //   id: 1,
+    //   title: "AI in Education: Transforming Learning",
+    //   type: "Research Article",
+    //   status: "Draft",
+    //   statusColor: "bg-gray-100 text-gray-600",
+    //   lastModified: "May 2, 2025",
+    // },
+    // {
+    //   id: 2,
+    //   title: "Quantum Computing: The Next Frontier",
+    //   type: "Technical Paper",
+    //   status: "In Review",
+    //   statusColor: "bg-orange-100 text-orange-600",
+    //   lastModified: "May 1, 2025",
+    // },
+    // {
+    //   id: 3,
+    //   title: "Climate Change: Global Solutions",
+    //   type: "Policy Brief",
+    //   status: "Published",
+    //   statusColor: "bg-green-100 text-green-600",
+    //   lastModified: "April 28, 2025",
+    // },
+    // {
+    //   id: 4,
+    //   title: "The Future of Remote Work",
+    //   type: "Business Report",
+    //   status: "Draft",
+    //   statusColor: "bg-gray-100 text-gray-600",
+    //   lastModified: "April 25, 2025",
+    // },
+    // {
+    //   id: 5,
+    //   title: "Sustainable Architecture Principles",
+    //   type: "Design Guide",
+    //   status: "Draft",
+    //   statusColor: "bg-gray-100 text-gray-600",
+    //   lastModified: "April 22, 2025",
+    // },
+    // {
+    //   id: 6,
+    //   title: "Digital Privacy in the Modern Age",
+    //   type: "Essay",
+    //   status: "In Review",
+    //   statusColor: "bg-orange-100 text-orange-600",
+    //   lastModified: "April 20, 2025",
+    // },
   ];
-
+  const router = useRouter();
   const handleCreateProject = () => {
     if (projectTitle.trim()) {
       // Here you would typically add the new project to your state/database
@@ -72,6 +71,13 @@ const QuantumQuillDashboard = () => {
       setProjectTitle("");
       setProjectType("");
       setProjectDescription("");
+      router.push(
+        `/application/editor?title=${encodeURIComponent(
+          projectTitle
+        )}&type=${encodeURIComponent(
+          projectType
+        )}&description=${encodeURIComponent(projectDescription)}`
+      );
       setIsNewProjectModalOpen(false);
     }
   };
@@ -107,7 +113,7 @@ const QuantumQuillDashboard = () => {
             >
               Drafts
             </a>
-            <a
+            {/* <a
               href="#"
               className="text-gray-500 hover:text-gray-900 font-medium"
             >
@@ -118,7 +124,7 @@ const QuantumQuillDashboard = () => {
               className="text-gray-500 hover:text-gray-900 font-medium"
             >
               Settings
-            </a>
+            </a> */}
           </nav>
 
           <div className="relative">
@@ -218,7 +224,9 @@ const QuantumQuillDashboard = () => {
 
             <button
               className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-indigo-700 transition-colors whitespace-nowrap"
-              onClick={() => setIsNewProjectModalOpen(true)}
+              onClick={() => {
+                setIsNewProjectModalOpen(true);
+              }}
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -239,89 +247,120 @@ const QuantumQuillDashboard = () => {
         </div>
 
         {/* Drafts Grid */}
-        <div
-          className={`grid gap-6 ${
-            viewMode === "grid"
-              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-              : "grid-cols-1"
-          }`}
-        >
-          {drafts.map((draft) => (
-            <div
-              key={draft.id}
-              className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 overflow-hidden"
+        {drafts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center text-gray-500">
+            <svg
+              className="w-16 h-16 mb-4 text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 48 48"
             >
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {draft.title}
-                  </h3>
-                  <div
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${draft.statusColor} w-20 text-center`}
-                  >
-                    {draft.status}
+              <rect
+                x="8"
+                y="12"
+                width="32"
+                height="24"
+                rx="4"
+                strokeWidth={2}
+                stroke="currentColor"
+              />
+              <path
+                d="M16 20h16M16 28h8"
+                strokeWidth={2}
+                stroke="currentColor"
+                strokeLinecap="round"
+              />
+            </svg>
+            <p className="text-lg font-medium mb-2">No drafts found</p>
+            <p className="text-sm">
+              Start by creating a new project to see your drafts here.
+            </p>
+          </div>
+        ) : (
+          <div
+            className={`grid gap-6 ${
+              viewMode === "grid"
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1"
+            }`}
+          >
+            {drafts.map((draft) => (
+              <div
+                key={draft.id}
+                className="group bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-1 overflow-hidden"
+              >
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {draft.title}
+                    </h3>
+                    <div
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${draft.statusColor} w-20 text-center`}
+                    >
+                      {draft.status}
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-500 mb-1">{draft.type}</p>
+                  <p className="text-xs text-gray-400">
+                    Last modified: {draft.lastModified}
+                  </p>
+
+                  <div className="flex justify-end space-x-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                    <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 transition-colors group"
+                      onClick={() => setIsDeleteModalOpen(true)}
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-600 group-hover:text-red-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-
-                <p className="text-sm text-gray-500 mb-1">{draft.type}</p>
-                <p className="text-xs text-gray-400">
-                  Last modified: {draft.lastModified}
-                </p>
-
-                <div className="flex justify-end space-x-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
-                    <svg
-                      className="w-4 h-4 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
-                    <svg
-                      className="w-4 h-4 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 transition-colors group"
-                    onClick={() => setIsDeleteModalOpen(true)}
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-600 group-hover:text-red-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Delete Confirmation Modal */}
