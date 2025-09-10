@@ -46,5 +46,5 @@ export async function login(formData: FormData) {
 
   cookieStore.set("email", String(email), { path: "/" });
 
-  redirect("/dashboard");
+  redirect("/application/dashboard");
 }

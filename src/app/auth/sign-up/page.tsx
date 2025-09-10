@@ -57,6 +57,7 @@ export default function SignUp({ searchParams }: SignUpProps) {
       setLoading(false);
     } finally {
       setLoading(false);
+      router.push("/application/login");
     }
   };
   return (

@@ -29,28 +29,38 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [messages, setMessages] = useState([
     { type: "ai", content: "Hello, how can I assist you today?" },
-    { type: "user", content: "I need help with formatting." },
   ]);
   const [inputMessage, setInputMessage] = useState("");
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim()) {
-      setMessages([...messages, { type: "user", content: inputMessage }]);
-      setInputMessage("");
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
 
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            type: "ai",
-            content:
-              "I can help you with document formatting, grammar checks, citations, and more. What specific assistance do you need?",
-          },
-        ]);
-      }, 1000);
+    const userMessage = { type: "user", content: inputMessage };
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage("");
+
+    try {
+      const response = await fetch("/api/routes/ai", {
+        // Your API route
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectTitle,
+          projectType,
+          projectDescription,
+          inputMessage,
+        }),
+      });
+
+      const { content } = await response.json();
+      setMessages((prev) => [...prev, { type: "ai", content }]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        { type: "ai", content: "There was an error." },
+      ]);
     }
   };
-
   const renderCitationsView = () => (
     <div className="flex-1 overflow-y-auto p-4 z-[999]">
       <h3 className="font-bold text-white mb-4">Citations Summary</h3>
