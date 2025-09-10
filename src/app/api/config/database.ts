@@ -8,7 +8,7 @@ const mongoConfig = {
   password: database.password,
   uri:
     process.env.MONGODB_URI ||
-    `mongodb+srv://${database.username}:${database.password}@cluster0.udxp9.mongodb.net/OnlineLearningPlatform?retryWrites=true&w=majority&appName=Cluster0`,
+    `mongodb+srv://iyanuoluwa938:${database.password}@cluster0.ie7en.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`,
 };
 
 const connectDB = async () => {
