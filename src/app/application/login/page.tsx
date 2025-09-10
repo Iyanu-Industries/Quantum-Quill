@@ -13,7 +13,7 @@ const Login = () => {
         </h1>
         <p className="font-[400] text-[16px] mt-[4px] leading-[100%]">
           Don't have an account?{" "}
-          <Link href="/login" className="underline">
+          <Link href="/auth/sign-up" className="underline">
             Sign Up
           </Link>
         </p>

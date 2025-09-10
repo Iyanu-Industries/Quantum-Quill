@@ -8,6 +8,7 @@ const GradientButton = ({
   borderRadius,
   textSize = "16px",
   className = "",
+  loading = false,
 }: {
   text: string;
   type?: "submit" | "reset" | "button" | undefined;
@@ -17,6 +18,7 @@ const GradientButton = ({
   borderRadius?: string;
   className?: string;
   textSize?: string;
+  loading?: boolean;
 }) => {
   return (
     <button
@@ -28,7 +30,7 @@ const GradientButton = ({
           : "bg-gradient-to-tr from-[#5D1EED] to-[#D97BFE]"
       } text-white text-center font-[500] shadow-md hover:opacity-90 transition ${className}`}
     >
-      {text}
+      {loading ? "Loading..." : text}
     </button>
   );
 };

@@ -1,6 +1,7 @@
 import React from "react";
 import GradientButton from "../../../components/gradient-button";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "./hero-section.module.css";
 const HeroSection = () => {
   return (
@@ -30,11 +31,13 @@ const HeroSection = () => {
         <br className="md:hidden block" /> precision.
       </div>
 
-      <GradientButton
-        className="mt-[24px] text-[16px] tracking-[0] font-[500] w-[91%] md:w-[212px] poppins rounded-[8px] md:rounded-[100px]"
-        height="51px"
-        text="Start Writing Now"
-      ></GradientButton>
+      <Link href="/auth/sign-up">
+        <GradientButton
+          className="mt-[24px] z-10 text-[16px] tracking-[0] font-[500] w-[91%] md:w-[212px] poppins rounded-[8px] md:rounded-[100px]"
+          height="51px"
+          text="Start Writing Now"
+        ></GradientButton>
+      </Link>
 
       <div
         className={` mt-[-50px]  ${styles.backgroundBleed} relative w-[100vw] overflow-hidden`}

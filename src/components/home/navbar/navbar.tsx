@@ -40,17 +40,19 @@ const Navbar = () => {
 
       <div className="ml-auto gap-[24px] items-center lg:flex hidden">
         <Link
-          href="/login"
+          href="/application/login"
           className="text-[#D9D9D9] hover:text-white transition-colors text-[16px] font-[400] tracking-[0]"
         >
           Login
         </Link>
-        <GradientButton
-          height="51px"
-          width="164px"
-          text="Get Started"
-          borderRadius="100px"
-        ></GradientButton>
+        <Link href="/auth/sign-up">
+          <GradientButton
+            height="51px"
+            width="164px"
+            text="Get Started"
+            borderRadius="100px"
+          ></GradientButton>
+        </Link>
       </div>
 
       {/* Mobile Navbar */}
