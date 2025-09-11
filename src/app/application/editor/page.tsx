@@ -297,22 +297,39 @@ export default function Home() {
     document.execCommand("insertOrderedList", false);
   };
   const handleCitationManager = () => {
-    // Simulate citation check
-    const mockCitations: Citation[] = [
-      {
+    const text = editorRef.current?.getEditorText() || "";
+
+    if (!text.trim()) {
+      setCitationsData([]);
+      setIsChatOpen(true);
+      setActiveView("citations");
+      return;
+    }
+
+    // Simple regex patterns for APA and IEEE citations
+    const apaRegex =
+      /\b([A-Z][a-z]+),\s([A-Z]\.)\s\((\d{4})\)\.\s(.+?)\.\s(.+?)\./g;
+    const ieeeRegex =
+      /\[\d+\]\s([A-Z]\.\s)?([A-Z][a-z]+),\s"(.+?)",\s(.+?),\svol\.\s\d+,\sno\.\s\d+,\spp\.\s\d+-\d+,\s\d{4}\./g;
+
+    const citations: Citation[] = [];
+
+    let match;
+    while ((match = apaRegex.exec(text))) {
+      citations.push({
         style: "APA",
-        text: "Smith, J. (2023). Research Methods in Computer Science. Academic Press.",
-      },
-      {
-        style: "MLA",
-        text: 'Johnson, Mary. "Modern Writing Techniques." Journal of Writing, vol. 45, 2023, pp. 123-145.',
-      },
-      {
-        style: "Chicago",
-        text: "Brown, David. The Art of Documentation. New York: Publishing House, 2023.",
-      },
-    ];
-    setCitationsData(mockCitations);
+        text: match[0],
+      });
+    }
+    while ((match = ieeeRegex.exec(text))) {
+      citations.push({
+        style: "IEEE",
+        text: match[0],
+      });
+    }
+
+    setCitationsData(citations);
+    console.log("Citations found:", citations);
     setIsChatOpen(true);
     setActiveView("citations");
   };

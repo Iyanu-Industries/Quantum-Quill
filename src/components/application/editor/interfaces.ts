@@ -16,7 +16,7 @@ export interface DocumentStats {
 }
 
 export interface Citation {
-  style: "APA" | "MLA" | "Chicago" | "Harvard";
+  style: "APA" | "MLA" | "Chicago" | "Harvard" | "IEEE";
   text: string;
 }
 
