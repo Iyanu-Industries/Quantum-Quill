@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const docx = htmlDocx.asBlob(html);
+  const docx = htmlDocx.asBlob(html) as Blob;
   const headers = {
     "Content-Disposition": `attachment; filename="${fileName}"`,
     "Content-Type":

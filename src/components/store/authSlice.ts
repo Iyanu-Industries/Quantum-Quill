@@ -42,8 +42,9 @@ export const login = createAsyncThunk(
       const { user, token } = response.data;
       localStorage.setItem("token", token); // Persist token
       return { user, token };
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Login failed");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      return rejectWithValue(message);
     }
   }
 );
@@ -55,8 +56,9 @@ export const logout = createAsyncThunk(
     try {
       localStorage.removeItem("token"); // Clear token
       return null;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Logout failed");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Logout failed";
+      return rejectWithValue(message);
     }
   }
 );
@@ -71,10 +73,9 @@ export const fetchCurrentUser = createAsyncThunk(
         headers: { Authorization: `Bearer ${state.auth.token}` },
       });
       return response.data.user;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user"
-      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to fetch user";
+      return rejectWithValue(message);
     }
   }
 );

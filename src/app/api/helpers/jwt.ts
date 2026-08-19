@@ -11,7 +11,7 @@ export default class JWT {
     return appConfig.jwt.secret;
   }
 
-  public static encode(payload: any, expiresIn?: number | StringValue): string {
+  public static encode(payload: Record<string, unknown>, expiresIn?: number | StringValue): string {
     const cert = this.readPrivateKey();
     const options: SignOptions = {
       expiresIn: expiresIn || (appConfig.jwt.expiresIn as StringValue),

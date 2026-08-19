@@ -32,8 +32,9 @@ export const fetchCourseById = createAsyncThunk(
     try {
       const response = await axios.get(`/api/courses/${courseId}`);
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return rejectWithValue(message);
     }
   }
 );
@@ -55,8 +56,9 @@ export const createCouse = createAsyncThunk(
     try {
       const response = await axios.post("/api/courses", courseData);
       return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return rejectWithValue(message);
     }
   }
 );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findUser, updateUser } from "@/app/api/database/repositories/user";
+import { findUser } from "@/app/api/database/repositories/user";
 import JWT from "../../helpers/jwt";
 import connectDB from "@/app/api/config/database";
 import { handleError } from "@/app/api/helpers/errorhandler";
@@ -34,7 +34,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    const { password, lastLogin, ...userWithoutPassword } = user;
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      first_name: user.first_name,
+      last_name: user.last_name,
+    };
 
     return NextResponse.json(
       { message: "User found", user: userWithoutPassword },

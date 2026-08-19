@@ -7,7 +7,7 @@ export default class InternalServerError extends ErrorHandler {
 
   protected httpCode = HttpStatus.INTERNAL_SERVER_ERROR;
 
-  public constructor(message: string = 'Internal server error', error: Error | undefined = undefined, data: any = null) {
+  public constructor(message: string = 'Internal server error', error: Error | undefined = undefined, data: Record<string, unknown> | null = null) {
     super(message, error, data);
     Error.captureStackTrace(this, this.constructor);
   }

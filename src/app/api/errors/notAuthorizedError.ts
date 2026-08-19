@@ -7,7 +7,7 @@ export default class NotAuthorizedError extends ErrorHandler {
 
   protected httpCode = HttpStatus.FORBIDDEN;
 
-  public constructor(message: string = 'Request is not authorized', error: Error | undefined = undefined, data: any = null) {
+  public constructor(message: string = 'Request is not authorized', error: Error | undefined = undefined, data: Record<string, unknown> | null = null) {
     super(message, error, data);
     Error.captureStackTrace(this, this.constructor);
   }

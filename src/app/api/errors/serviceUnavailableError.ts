@@ -7,7 +7,7 @@ export default class ServiceUnavailableError extends ErrorHandler {
 
   protected httpCode = HttpStatus.SERVICE_UNAVAILABLE;
 
-  public constructor(message: string = 'Service currently unavailable', error: Error | undefined = undefined, data: any = null) {
+  public constructor(message: string = 'Service currently unavailable', error: Error | undefined = undefined, data: Record<string, unknown> | null = null) {
     super(message, error, data);
     Error.captureStackTrace(this, this.constructor);
   }

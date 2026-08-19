@@ -1,7 +1,5 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import 'remixicon/fonts/remixicon.css';
-import "@fortawesome/fontawesome-free/css/all.min.css";
+// import "./globals.css";
+// import "@fortawesome/fontawesome-free/css/all.min.css";
 
 export default function RootLayout({
   children,

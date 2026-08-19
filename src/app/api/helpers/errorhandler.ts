@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import logger from "../utils/logger";
 
-export const handleError = (error: any) => {
+export const handleError = (error: unknown) => {
   if (error instanceof z.ZodError) {
     const formattedErrors = error.errors.reduce(
       (acc: Record<string, string>, err) => {

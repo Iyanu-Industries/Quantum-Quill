@@ -6,9 +6,9 @@ interface ChatSidebarProps {
   projectType: string;
   projectDescription: string;
   isPlagiarismLoading?: boolean;
-  citationsData: any[];
-  plagiarismData: any;
-  grammarData: any[];
+  citationsData: Array<{ style: string; text: string }>;
+  plagiarismData: { score: number; issues: Array<{ source: string; text: string }> } | null;
+  grammarData: Array<{ type: string; category: string; text: string; suggestion: string }>;
   activeView: string;
   setActiveView: (
     view: "chat" | "citations" | "plagiarism" | "grammar"
@@ -54,7 +54,7 @@ export function ChatSidebar({
 
       const { content } = await response.json();
       setMessages((prev) => [...prev, { type: "ai", content }]);
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         { type: "ai", content: "There was an error." },
@@ -128,7 +128,7 @@ export function ChatSidebar({
           {plagiarismData.issues?.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-white font-medium">Issues Found:</h4>
-              {plagiarismData.issues.map((issue: any, index: number) => (
+              {plagiarismData.issues.map((issue: { source: string; text: string }, index: number) => (
                 <div
                   key={index}
                   className="bg-red-900/30 border border-red-700 p-3 rounded-lg"

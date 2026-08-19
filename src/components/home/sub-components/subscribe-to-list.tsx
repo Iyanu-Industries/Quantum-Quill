@@ -5,7 +5,6 @@ import GradientButton from "../../gradient-button";
 const SubscribeToList = ({ className }: { className: string }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-
   const validateEmail = (email: string) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
@@ -26,9 +25,8 @@ const SubscribeToList = ({ className }: { className: string }) => {
 
     try {
       setEmail("");
-      setError("");
-    } catch (err) {
-      setError("Failed to subscribe. Please try again.");
+    } catch {
+      setEmail("Failed to subscribe. Please try again.");
     }
   };
   return (
@@ -53,6 +51,7 @@ const SubscribeToList = ({ className }: { className: string }) => {
         textSize={`10px`}
         className="rounded-[24px] ml-[8px] text-[10px] text-center poppins"
       />
+      {error && error}
     </form>
   );
 };

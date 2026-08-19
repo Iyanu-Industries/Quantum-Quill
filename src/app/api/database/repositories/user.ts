@@ -1,28 +1,27 @@
-import User, { UserAttributes } from "../models/user";
+import User, { IUser, UserAttributes } from "../models/user";
 import {
   ClientSession,
   FilterQuery,
   ProjectionType,
   PopulateOptions,
-  SessionOperation,
 } from "mongoose";
 import bcrypt from "bcryptjs";
 
-interface FindUserOptions<T> {
-  filter: FilterQuery<T>;
-  projection?: ProjectionType<T>;
+interface FindUserOptions {
+  filter: FilterQuery<IUser>;
+  projection?: ProjectionType<UserAttributes>;
   populate?: string | PopulateOptions | Array<string | PopulateOptions>;
   session?: ClientSession;
   lean?: boolean;
 }
 
-export async function findUser<T extends UserAttributes>({
+export async function findUser({
   filter,
   projection,
   populate,
   session,
   lean = true,
-}: FindUserOptions<T>): Promise<T | null> {
+}: FindUserOptions): Promise<UserAttributes | null> {
   const query = User.findOne(filter);
 
   if (projection) {
@@ -53,8 +52,8 @@ export async function findUser<T extends UserAttributes>({
   }
 
   try {
-    return (await query.exec()) as Promise<T | null>;
-  } catch (error) {
+    return (await query.exec()) as UserAttributes | null;
+  } catch {
     throw new Error(`Failed to find use`);
   }
 }
@@ -74,11 +73,11 @@ export const createUser = async (
 };
 
 export const findExistingUser = async (
-  data: Partial<UserAttributes>,
+  data: Partial<IUser>,
   session?: ClientSession
 ): Promise<UserAttributes | null> => {
   return (await User.findOne(
-    data as FilterQuery<UserAttributes>,
+    data as FilterQuery<IUser>,
     session ? { session } : {}
   ).lean()) as UserAttributes | null;
 };

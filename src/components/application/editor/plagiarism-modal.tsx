@@ -117,7 +117,7 @@ const PlagiarismModal: React.FC<PlagiarismModalProps> = ({
                     </a>
                   </div>
                   <p className="text-gray-800 bg-yellow-50 p-3 rounded">
-                    "{result.text}"
+                    &quot;{result.text}&quot;
                   </p>
                   <div className="mt-3">
                     <p className="text-sm text-gray-600 mb-2">Suggestions:</p>
@@ -134,7 +134,7 @@ const PlagiarismModal: React.FC<PlagiarismModalProps> = ({
         )}
         {!isScanning && scanResults.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-gray-500">
-            Click "Start Scan" to check for plagiarism
+            Click &quot;Start Scan&quot; to check for plagiarism
           </div>
         )}
       </div>

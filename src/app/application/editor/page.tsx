@@ -1,14 +1,7 @@
 "use client";
-import {
-  useState,
-  useEffect,
-  useRef,
-  useImperativeHandle,
-  forwardRef,
-} from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Toolbar } from "@/components/application/editor/toolbar";
-import { Sidebar } from "@/components/application/editor/sidebar";
 import { LoadingAnimation } from "@/components/application/editor/loading";
 import { Header } from "@/components/application/editor/header";
 import { ChatSidebar } from "@/components/application/editor/chatSidebar";
@@ -32,11 +25,11 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Format");
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [citationsData, setCitationsData] = useState<Citation[]>([]);
   const [plagiarismData, setPlagiarismData] = useState<PlagiarismData | null>(
-    null
+    null,
   );
   const [isPlagiarismCheckLoading, setIsPlagiarismCheckLoading] =
     useState(false);
@@ -75,15 +68,17 @@ export default function Home() {
       const data = await response.json();
 
       // Convert to your GrammarCheckResult format
-      const results = data.matches.map((match: any) => ({
-        type: match.rule.issueType === "grammar" ? "error" : "suggestion",
-        category: match.rule.category.name,
-        text: match.context.text.substring(
-          match.context.offset,
-          match.context.offset + match.context.length
-        ),
-        suggestion: match.replacements[0]?.value || "No suggestion available",
-      }));
+      const results = data.matches.map(
+        (match: Record<string, Record<string, any>>) => ({
+          type: match.rule.issueType === "grammar" ? "error" : "suggestion",
+          category: match.rule.category.name,
+          text: match.context.text.substring(
+            match.context.offset,
+            match.context.offset + match.context.length,
+          ),
+          suggestion: match.replacements[0]?.value || "No suggestion available",
+        }),
+      );
 
       return results;
     } catch (error) {
@@ -216,7 +211,7 @@ export default function Home() {
     markerClasses.forEach((markerClass) => {
       // Convert NodeList to array using the actual DOM element
       const markers = Array.from(
-        editorElement.querySelectorAll(`.${markerClass}`)
+        editorElement.querySelectorAll(`.${markerClass}`),
       );
 
       markers.forEach((marker) => {
@@ -229,7 +224,7 @@ export default function Home() {
 
   const handlePageSetupChange = (
     property: keyof PageSetup,
-    value: string | number
+    value: string | number,
   ) => {
     setPageSetup((prev) => ({ ...prev, [property]: value }));
 
@@ -267,10 +262,6 @@ export default function Home() {
 
   const handleUnderline = (): void => {
     document.execCommand("underline", false);
-  };
-
-  const handleStrikethrough = (): void => {
-    document.execCommand("strikethrough", false);
   };
 
   const handleAlignLeft = (): void => {
@@ -341,17 +332,19 @@ export default function Home() {
         "http://localhost:5000/api/check-plagiarism",
         {
           text: text,
-        }
+        },
       );
 
       // Transform the API response to match our PlagiarismData structure
       return {
         score: response.data.similarityScore,
-        issues: response.data.detailedMatches.map((match: any) => ({
-          source: match.title,
-          text: `Found ${match.maxSimilarity}% similarity in this paper`,
-          similarity: match.maxSimilarity,
-        })),
+        issues: response.data.detailedMatches.map(
+          (match: Record<string, unknown>) => ({
+            source: match.title,
+            text: `Found ${match.maxSimilarity}% similarity in this paper`,
+            similarity: match.maxSimilarity,
+          }),
+        ),
       };
     } catch (error) {
       console.error("Plagiarism check failed:", error);

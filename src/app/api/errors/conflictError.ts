@@ -9,7 +9,7 @@ export default class ConflictError extends ErrorHandler {
   constructor(
     message = 'The request could not be completed due to a conflict with the current state of the target resource',
     error: Error | undefined = undefined,
-    data: any = null
+    data: Record<string, unknown> | null = null
   ) {
     super(message, error, data);
     Error.captureStackTrace(this, this.constructor);

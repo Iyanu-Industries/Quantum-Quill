@@ -1,6 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import React, { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
+
+interface Draft {
+  id: number;
+  title: string;
+  type: string;
+  status: string;
+  statusColor: string;
+  lastModified: string;
+}
+
 const QuantumQuillDashboard = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -9,7 +19,7 @@ const QuantumQuillDashboard = () => {
   const [projectTitle, setProjectTitle] = useState("");
   const [projectType, setProjectType] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
-  const drafts: any[] = [
+  const drafts: Draft[] = [
     // {
     //   id: 1,
     //   title: "AI in Education: Transforming Learning",
@@ -73,10 +83,10 @@ const QuantumQuillDashboard = () => {
       setProjectDescription("");
       router.push(
         `/application/editor?title=${encodeURIComponent(
-          projectTitle
+          projectTitle,
         )}&type=${encodeURIComponent(
-          projectType
-        )}&description=${encodeURIComponent(projectDescription)}`
+          projectType,
+        )}&description=${encodeURIComponent(projectDescription)}`,
       );
       setIsNewProjectModalOpen(false);
     }
@@ -292,18 +302,20 @@ const QuantumQuillDashboard = () => {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {draft.title}
+                      {draft.title as ReactNode}
                     </h3>
                     <div
                       className={`px-2 py-1 rounded-full text-xs font-medium ${draft.statusColor} w-20 text-center`}
                     >
-                      {draft.status}
+                      {draft.status as ReactNode}
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-500 mb-1">{draft.type}</p>
+                  <p className="text-sm text-gray-500 mb-1">
+                    {draft.type as ReactNode}
+                  </p>
                   <p className="text-xs text-gray-400">
-                    Last modified: {draft.lastModified}
+                    Last modified: {draft.lastModified as ReactNode}
                   </p>
 
                   <div className="flex justify-end space-x-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">

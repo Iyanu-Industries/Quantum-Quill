@@ -12,7 +12,7 @@ const Login = () => {
           Login to QuantumQuill
         </h1>
         <p className="font-[400] text-[16px] mt-[4px] leading-[100%]">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/auth/sign-up" className="underline">
             Sign Up
           </Link>

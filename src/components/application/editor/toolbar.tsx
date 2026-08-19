@@ -35,7 +35,6 @@ export function Toolbar({
   onItalic,
   onUnderline,
   onAlignCenter,
-  onAlignJustify,
   onAlignLeft,
   onAlignRight,
   activeTab,

@@ -7,7 +7,7 @@ export default class NotAuthenticatedError extends ErrorHandler {
 
   protected httpCode = HttpStatus.UNAUTHORIZED;
 
-  public constructor(message: string = 'Request not authenticated', error: Error | undefined = undefined, data: any = null) {
+  public constructor(message: string = 'Request not authenticated', error: Error | undefined = undefined, data: Record<string, unknown> | null = null) {
     super(message, error, data);
     Error.captureStackTrace(this, this.constructor);
   }

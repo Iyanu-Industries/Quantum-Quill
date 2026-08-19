@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 
 const journalArticles = [
   {
@@ -39,7 +39,7 @@ interface JournalsModalProps {
   handleCitation: (article: (typeof journalArticles)[0]) => void;
 }
 
-const journalsModal: React.FC<JournalsModalProps> = ({
+const JournalsModal: React.FC<JournalsModalProps> = ({
   setIsJournalsModalOpen,
   handleCitation,
 }) => {
@@ -143,4 +143,4 @@ const journalsModal: React.FC<JournalsModalProps> = ({
   );
 };
 
-export default journalsModal;
+export default JournalsModal;

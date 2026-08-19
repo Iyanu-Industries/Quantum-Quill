@@ -6,11 +6,7 @@ import GradientButton from "@/components/gradient-button";
 import styles from "./sign-up.module.css";
 import { useRouter } from "next/navigation";
 
-interface SignUpProps {
-  searchParams?: { [key: string]: string | string[] | undefined };
-}
-
-export default function SignUp({ searchParams }: SignUpProps) {
+export default function SignUp() {
   const router = useRouter();
   interface ApiResponse {
     message: string;
@@ -53,7 +49,7 @@ export default function SignUp({ searchParams }: SignUpProps) {
       } else {
         setError("Something went wrong");
       }
-    } catch (error: any) {
+    } catch {
       setLoading(false);
     } finally {
       setLoading(false);

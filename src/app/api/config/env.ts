@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-export default {
+const envConfig = {
   application: {
     nodeEnv: process.env.NODE_ENV?.toLowerCase() || "development",
     port: process.env.PORT || 3500,
@@ -25,10 +25,12 @@ export default {
     host: process.env.REDIS_HOST || "127.0.0.1",
     port: Number(process.env.REDIS_PORT) || 6379,
     password: process.env.REDIS_PASSWORD || "",
-    maxRetriesPerRequest: null as any,
+    maxRetriesPerRequest: null as unknown as number | null,
     enableReadyCheck: false,
   },
   hugginFace: {
     apiKey: process.env.HF_TOKEN || "api-key",
   },
 };
+
+export default envConfig;

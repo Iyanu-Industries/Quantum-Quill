@@ -1,4 +1,4 @@
-// The exported code uses Tailwind CSS. Install Tailwind CSS in your dev environment to ensure all styles work.
+"use client";
 import React, { useState, useRef, useEffect } from "react";
 const App: React.FC = () => {
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
@@ -9,7 +9,7 @@ const App: React.FC = () => {
         text: "Hello! I'm your AI writing assistant. How can I help you today?",
         isUser: false,
       },
-    ]
+    ],
   );
   const [newMessage, setNewMessage] = useState("");
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -194,7 +194,7 @@ const App: React.FC = () => {
 
                       const size = (file.size / 1024).toFixed(2);
                       const lastModified = new Date(
-                        file.lastModified
+                        file.lastModified,
                       ).toLocaleString();
 
                       content.innerHTML = `
@@ -438,7 +438,7 @@ const App: React.FC = () => {
               The concept of artificial intelligence dates back to the mid-20th
               century, when computer scientists first began exploring the
               possibility of creating machines capable of simulating human
-              intelligence. The term "artificial intelligence" was coined by
+              intelligence. The term &quot;artificial intelligence&quot; was coined by
               John McCarthy in 1956 at the Dartmouth Conference, which is widely
               considered the{" "}
               <span
@@ -718,7 +718,7 @@ const App: React.FC = () => {
                         </a>
                       </div>
                       <p className="text-gray-800 bg-yellow-50 p-3 rounded">
-                        "{result.text}"
+                        &quot;{result.text}&quot;
                       </p>
                       <div className="mt-3">
                         <p className="text-sm text-gray-600 mb-2">
@@ -737,7 +737,7 @@ const App: React.FC = () => {
             )}
             {!isScanning && scanResults.length === 0 && (
               <div className="flex-1 flex items-center justify-center text-gray-500">
-                Click "Start Scan" to check for plagiarism
+                Click &quot;Start Scan&quot; to check for plagiarism
               </div>
             )}
           </div>

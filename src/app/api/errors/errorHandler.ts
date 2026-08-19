@@ -11,9 +11,9 @@ export default class ErrorHandler extends Error {
 
   protected httpCode = HttpStatus.INTERNAL_SERVER_ERROR;
 
-  protected data: { [key: string]: any };
+  protected data: { [key: string]: unknown } | null;
 
-  public constructor(message: string, error: Error | undefined = undefined, data: { [key: string]: any }) {
+  public constructor(message: string, error: Error | undefined = undefined, data: { [key: string]: unknown } | null = null) {
     super(message);
     this.internal = error;
     this.data = data;

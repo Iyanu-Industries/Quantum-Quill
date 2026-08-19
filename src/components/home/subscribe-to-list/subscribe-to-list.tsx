@@ -26,7 +26,7 @@ const SubscribeToList = () => {
     try {
       setEmail("");
       setError("");
-    } catch (err) {
+    } catch {
       setError("Failed to subscribe. Please try again.");
     }
   };

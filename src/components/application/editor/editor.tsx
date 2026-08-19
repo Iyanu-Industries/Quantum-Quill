@@ -1,7 +1,6 @@
 import {
   forwardRef,
   useEffect,
-  useState,
   useRef,
   useImperativeHandle,
 } from "react";
@@ -39,20 +38,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
   ) => {
     // Fix: Type the ref as HTMLDivElement
     const editorRef = useRef<HTMLDivElement>(null);
-    const [editorWidth, setEditorWidth] = useState("w-4xl min-w-4xl");
     useEffect(() => {
-      // Each sidebar/chat is 48px wide-
       let sidebars = 0;
       if (isSidebarOpen) sidebars += 1;
       if (isChatOpen) sidebars += 1;
-      const totalSidebarWidth = sidebars * 48;
 
-      // Calculate new zoom level based on available width
-      // Assume base zoom is 100 when no sidebar is open
-      // For every 48px, reduce zoom by a proportional amount
-      // You may want to tweak the divisor for your layout
       const baseZoom = 100;
-      const zoomReductionPerSidebar = 6; // ~6% per 48px, adjust as needed
+      const zoomReductionPerSidebar = 6;
       const newZoom = baseZoom - sidebars * zoomReductionPerSidebar;
 
       if (setZoomLevel) {
@@ -102,8 +94,6 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
       onStatsUpdate(newStats);
     };
 
-    const fontSize = Math.round(16 * (zoomLevel / 100));
-
     return (
       <div
         style={{ scrollbarWidth: "thin" }}
@@ -111,7 +101,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
       >
         <div className="flex-1 p-8 ">
           <div
-            className={`${editorWidth} mx-auto bg-white rounded-lg shadow-lg min-h-[800px] p-8 transition-all duration-300`}
+            className={`mx-auto bg-white rounded-lg shadow-lg min-h-[800px] p-8 transition-all duration-300`}
             style={{
               transform: `scale(${zoomLevel / 100})`,
               transformOrigin: "top center",
@@ -148,3 +138,4 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(
     );
   }
 );
+Editor.displayName = "Editor";
